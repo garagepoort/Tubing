@@ -149,7 +149,7 @@ public class MysqlSimpleRepository implements SimpleRepository {
 ```
 
 ### Conditional Bean instantiation
-Mc-Ioc allows you to instantiate beans conditionally dependening on configuration properties.
+Mc-Ioc allows you to instantiate beans conditionally depending on configuration properties.
 Let's say you support mysql and sqlite database in your plugin. Maybe you also have 2 different repository implementations to support that.
 
 Within the configuration file users of the plugin can set a storage type:
