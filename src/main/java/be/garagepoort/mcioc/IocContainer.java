@@ -2,6 +2,8 @@ package be.garagepoort.mcioc;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.scanners.TypeAnnotationsScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,21 +16,10 @@ import java.util.stream.Collectors;
 public class IocContainer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IocContainer.class);
-    private static final Map<Class, Object> beans = new HashMap<>();
-    private static final IocConditionalPropertyFilter iocConditionalPropertyFilter = new IocConditionalPropertyFilter();
+    private final Map<Class, Object> beans = new HashMap<>();
+    private final IocConditionalPropertyFilter iocConditionalPropertyFilter = new IocConditionalPropertyFilter();
 
-    public static void init(String packageName, FileConfiguration config) {
-        Reflections reflections = new Reflections(packageName);
-        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
-            .filter(a -> iocConditionalPropertyFilter.isValidBean(a, config))
-            .collect(Collectors.toSet());
-
-        for (Class<?> aClass : typesAnnotatedWith) {
-            instantiateBean(reflections, aClass, typesAnnotatedWith, false);
-        }
-    }
-
-    private static Object instantiateBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, boolean multiProvider) {
+    private Object instantiateBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, boolean multiProvider) {
         LOGGER.debug("[MC-IOC] Instantiating bean [{}]", aClass.getName());
 
         if (multiProvider) {
@@ -62,7 +53,18 @@ public class IocContainer {
         return createBean(reflections, aClass, validBeans);
     }
 
-    private static Object createBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans) {
+    public void init(String packageName, FileConfiguration config) {
+        Reflections reflections = new Reflections(packageName, new TypeAnnotationsScanner(), new SubTypesScanner());
+        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
+                .filter(a -> iocConditionalPropertyFilter.isValidBean(a, config))
+                .collect(Collectors.toSet());
+
+        for (Class<?> aClass : typesAnnotatedWith) {
+            instantiateBean(reflections, aClass, typesAnnotatedWith, false);
+        }
+    }
+
+    private Object createBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans) {
         if (beans.containsKey(aClass)) {
             return beans.get(aClass);
         }
@@ -88,7 +90,7 @@ public class IocContainer {
         }
     }
 
-    private static List<Object> buildConstructorParams(Reflections reflections, Set<Class<?>> validBeans, Constructor<?> declaredConstructor) {
+    private List<Object> buildConstructorParams(Reflections reflections, Set<Class<?>> validBeans, Constructor<?> declaredConstructor) {
         List<Object> constructorParams = new ArrayList<>();
 
         Class<?>[] parameterTypes = declaredConstructor.getParameterTypes();
@@ -108,11 +110,11 @@ public class IocContainer {
         return constructorParams;
     }
 
-    public static void registerBean(Object o) {
+    public void registerBean(Object o) {
         beans.put(o.getClass(), o);
     }
 
-    public static <T> T get(Class<T> clazz) {
+    public <T> T get(Class<T> clazz) {
         if (clazz.isInterface()) {
             List<Object> collect = beans.keySet().stream().filter(clazz::isAssignableFrom).map(beans::get).collect(Collectors.toList());
             if (collect.size() > 1) {
@@ -126,7 +128,7 @@ public class IocContainer {
         return (T) beans.get(clazz);
     }
 
-    public static <T> List<T> getList(Class<T> clazz) {
+    public <T> List<T> getList(Class<T> clazz) {
         return (List<T>) beans.get(clazz);
     }
 
