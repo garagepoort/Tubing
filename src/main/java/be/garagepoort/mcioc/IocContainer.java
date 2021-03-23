@@ -86,7 +86,7 @@ public class IocContainer {
             beans.putIfAbsent(aClass, bean);
             return bean;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new IocException("Cannot instantiate bean with type " + aClass.getName() + ". " + e.getMessage());
+            throw new IocException("Cannot instantiate bean with type " + aClass.getName() + ".", e);
         }
     }
 
