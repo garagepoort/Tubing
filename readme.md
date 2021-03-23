@@ -1,7 +1,7 @@
 ## Introduction
 
-The MC-IOC library is a very small library I created to aid lose coupling spigot plugins.
-The library gives you annotation based dependency injection with minimum setup
+The MC-IOC library is a very small library I created to aid loose coupling spigot plugins.
+The library gives you annotation based dependency injection with minimal setup
 It has limited features, but in my opinion contains everything you need for building mc plugins.
 
 ### Setup
