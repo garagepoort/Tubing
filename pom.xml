@@ -94,6 +94,12 @@
                                     </excludes>
                                 </filter>
                             </filters>
+                            <relocations>
+                                <relocation>
+                                    <pattern>org.reflections.</pattern>
+                                    <shadedPattern>be.garagepoort.mcioc.org.reflections.</shadedPattern>
+                                </relocation>
+                            </relocations>
                         </configuration>
                     </execution>
                 </executions>
