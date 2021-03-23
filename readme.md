@@ -89,6 +89,7 @@ The IocBean annotation is used to tell the IocContainer to instantiate this bean
 For example. Let's say I have a command and service which is triggered by that command.
 
 #### SimpleCommand
+
 ```
 @IocBean
 public class SimpleCommand implements CommandExecutor {
@@ -110,7 +111,7 @@ public class SimpleCommand implements CommandExecutor {
 ```
 
 #### SimpleService
-
+```
 @IocBean
 public class SimpleService {
 
@@ -124,7 +125,7 @@ public class SimpleService {
        //do something
     }
 }
-
+```
 As you can see I only need to specify the annotation and I can be certain that the SimpleService will be provided.
 You can see the SimpleService inject a SimpleRepository. This class is an interface wich I will explain below.
 
