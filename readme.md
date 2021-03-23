@@ -141,7 +141,7 @@ public interface SimpleRepository {
 }
 
 @IocBean
-public class MysqlSimpleRepository implement SimpleRepository {
+public class MysqlSimpleRepository implements SimpleRepository {
   public Simple getSimple(int id) {
     return null;
   }
@@ -191,11 +191,29 @@ Mc-Ioc supports injection a List of type interface.
 public interface ExampleMultiInterface {}
 
 @IocBean
+@IocMultiProvider(ExampleMultiInterface.class)
 public class EasyExampleMultiInterface implements ExampleMultiInterface {}
 
+@IocBean
+@IocMultiProvider(ExampleMultiInterface.class)
 public class MediumExampleMultiInterface implements ExampleMultiInterface {}
 
+@IocBean
+@IocMultiProvider(ExampleMultiInterface.class)
 public class DifficultExampleMultiInterface implements ExampleMultiInterface {}
 ```
 
+By specifying @IocMultiProvider, the ioc container knows you want this bean to be added to the list of ExampleMultiInterface instances.
+Now when we want to Inject a list of these instances we need to do the following:
 
+```
+@IocBean
+public class SimpleMultiInterfaceExecutor {
+
+  private final List<ExampleMultiInterface> exampleInterfaces;
+
+  public SimpleMultiInterfaceExecutor(@IocMulti(ExampleMultiInterface.class) List<ExampleMultiInterface> exampleInterfaces) {
+     this.exampleInterfaces = exampleInterfaces;
+  }
+}
+```
