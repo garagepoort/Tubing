@@ -98,7 +98,7 @@ public class SimpleCommand implements CommandExecutor {
     public SimpleCommand(SimpleService simpleService) {
       this.simpleService = simpleService;
       // Doing this is not entirely clean but in the concept of mc plugins I find this acceptable
-      // By doing this I also only have registration and creation of the command in one spot.
+      // By doing this I also have registration and creation of the command in one spot.
       ExamplePlugin.get().getCommand("simple-command")).setExecutor(this)
     }
     
