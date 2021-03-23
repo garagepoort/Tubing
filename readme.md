@@ -85,7 +85,7 @@ When calling the init method you must pass your package name. This must be the r
 The second parameter is the configuration file.
 
 ### @IocBean
-THe IocBean annotation is used to tell the IocContainer to instantiate this bean. Only constructor injection is supported.
+The IocBean annotation is used to tell the IocContainer to instantiate this bean. Only constructor injection is supported.
 For example. Let's say I have a command and service which is triggered by that command.
 
 #### SimpleCommand
