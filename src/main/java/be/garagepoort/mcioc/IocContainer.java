@@ -25,15 +25,24 @@ public class IocContainer {
         if (multiProvider) {
             beans.putIfAbsent(aClass, new ArrayList<>());
             Set<Class<?>> subTypesOf = reflections.getSubTypesOf((Class<Object>) aClass).stream().filter(validBeans::contains).collect(Collectors.toSet());
-            subTypesOf.forEach(subClass -> ((List) beans.get(aClass)).add(createBean(reflections, subClass, validBeans)));
+            List list = (List) beans.get(aClass);
+            for (Class<?> subClass : subTypesOf) {
+                Object bean = createBean(reflections, subClass, validBeans);
+                if (!list.contains(bean)) {
+                    list.add(bean);
+                }
+            }
             return beans.get(aClass);
         }
 
         if (aClass.isAnnotationPresent(IocMultiProvider.class)) {
             Class multiClass = aClass.getAnnotation(IocMultiProvider.class).value();
             beans.putIfAbsent(multiClass, new ArrayList<>());
+            List list = (List) beans.get(multiClass);
             Object bean = createBean(reflections, aClass, validBeans);
-            ((List) beans.get(multiClass)).add(bean);
+            if (!list.contains(bean)) {
+                list.add(bean);
+            }
             return bean;
         }
 
