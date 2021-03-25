@@ -24,6 +24,8 @@ public class IocContainer {
 
         if (multiProvider) {
             beans.putIfAbsent(aClass, new ArrayList<>());
+            Set<Class<?>> subTypesOf = reflections.getSubTypesOf((Class<Object>) aClass).stream().filter(validBeans::contains).collect(Collectors.toSet());
+            subTypesOf.forEach(subClass -> ((List) beans.get(aClass)).add(createBean(reflections, subClass, validBeans)));
             return beans.get(aClass);
         }
 
