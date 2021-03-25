@@ -60,7 +60,7 @@ public class ExamplePlugin extends JavaPlugin {
     private static ExamplePlugin plugin;
     private static IocContainer iocContainer;
 
-    public static BsCoreReport get() {
+    public static ExamplePlugin get() {
         return plugin;
     }
 
