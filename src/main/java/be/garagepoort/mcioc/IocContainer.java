@@ -1,6 +1,11 @@
 package be.garagepoort.mcioc;
 
+import org.bukkit.Bukkit;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
@@ -18,6 +23,72 @@ public class IocContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(IocContainer.class);
     private final Map<Class, Object> beans = new HashMap<>();
     private final IocConditionalPropertyFilter iocConditionalPropertyFilter = new IocConditionalPropertyFilter();
+
+    public void init(JavaPlugin javaPlugin, FileConfiguration config) {
+        Reflections reflections = new Reflections(javaPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
+        loadIocBeans(config, reflections);
+        loadCommandHandlerBeans(javaPlugin, reflections);
+        loadListenerBeans(javaPlugin, reflections);
+        loadMessageListenerBeans(javaPlugin, reflections);
+    }
+
+    private void loadIocBeans(FileConfiguration config, Reflections reflections) {
+        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
+                .filter(a -> iocConditionalPropertyFilter.isValidBean(a, config))
+                .collect(Collectors.toSet());
+
+        for (Class<?> aClass : typesAnnotatedWith) {
+            instantiateBean(reflections, aClass, typesAnnotatedWith, false);
+        }
+    }
+
+    private void loadCommandHandlerBeans(JavaPlugin javaPlugin, Reflections reflections) {
+        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocCommandHandler.class);
+
+        for (Class<?> aClass : typesAnnotatedWith) {
+            if(!CommandExecutor.class.isAssignableFrom(aClass)) {
+                throw new IocException("IocCommandHandler annotation can only be used on CommandExecutors");
+            }
+            if(!beans.containsKey(aClass)) {
+                continue;
+            }
+            CommandExecutor bean = (CommandExecutor) this.get(aClass);
+            IocCommandHandler annotation = aClass.getAnnotation(IocCommandHandler.class);
+            javaPlugin.getCommand(annotation.value()).setExecutor(bean);
+        }
+    }
+
+    private void loadListenerBeans(JavaPlugin javaPlugin, Reflections reflections) {
+        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocListener.class);
+
+        for (Class<?> aClass : typesAnnotatedWith) {
+            if(!Listener.class.isAssignableFrom(aClass)) {
+                throw new IocException("IocListener annotation can only be used on bukkit Listeners");
+            }
+            if(!beans.containsKey(aClass)) {
+                continue;
+            }
+            Listener bean = (Listener) this.get(aClass);
+            Bukkit.getPluginManager().registerEvents(bean, javaPlugin);
+        }
+    }
+
+
+    private void loadMessageListenerBeans(JavaPlugin javaPlugin, Reflections reflections) {
+        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocMessageListener.class);
+
+        for (Class<?> aClass : typesAnnotatedWith) {
+            if(!PluginMessageListener.class.isAssignableFrom(aClass)) {
+                throw new IocException("IocMessageListener annotation can only be used on bukkit PluginMessageListeners");
+            }
+            if(!beans.containsKey(aClass)) {
+                continue;
+            }
+            PluginMessageListener bean = (PluginMessageListener) this.get(aClass);
+            IocMessageListener annotation = aClass.getAnnotation(IocMessageListener.class);
+            javaPlugin.getServer().getMessenger().registerIncomingPluginChannel(javaPlugin, annotation.channel(), bean);
+        }
+    }
 
     private Object instantiateBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, boolean multiProvider) {
         LOGGER.debug("[MC-IOC] Instantiating bean [{}]", aClass.getName());
@@ -62,17 +133,6 @@ public class IocContainer {
             return createBean(reflections, subTypesOf.iterator().next(), validBeans);
         }
         return createBean(reflections, aClass, validBeans);
-    }
-
-    public void init(String packageName, FileConfiguration config) {
-        Reflections reflections = new Reflections(packageName, new TypeAnnotationsScanner(), new SubTypesScanner());
-        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
-                .filter(a -> iocConditionalPropertyFilter.isValidBean(a, config))
-                .collect(Collectors.toSet());
-
-        for (Class<?> aClass : typesAnnotatedWith) {
-            instantiateBean(reflections, aClass, typesAnnotatedWith, false);
-        }
     }
 
     private Object createBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans) {
