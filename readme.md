@@ -1,6 +1,6 @@
 ## Introduction
 
-The MC-IOC library is a very small library I created to aid loose coupling spigot plugins.
+The Tubing library is a very small library I created to aid loose coupling spigot plugins.
 The library gives you annotation based dependency injection with minimal setup
 It has limited features, but in my opinion contains everything you need for building mc plugins.
 
@@ -19,8 +19,8 @@ Add maven dependency
     <dependencies>
       <dependency>
           <groupId>be.garagepoort.mcioc</groupId>
-          <artifactId>mcioc</artifactId>
-          <version>1.0.5</version>
+          <artifactId>tubing</artifactId>
+          <version>2.0.0</version>
       </dependency>
     <dependencies>
 ```
@@ -52,60 +52,100 @@ Make sure to change "my.package.here" in the below example!
 ```
 
 #### Instantiating the container.
-In your main plugin class instantiate the IocContainer.
+Change your main plugin class to extends the TubingPlugin class.
+Do not implement `onEnable` and `onDisable`, but implement `enable` and `disable`.
+In the `enable` method put your configuration files setup.
 
 ```
-public class ExamplePlugin extends JavaPlugin {
-
-    private static ExamplePlugin plugin;
-    private static IocContainer iocContainer;
-
-    public static ExamplePlugin get() {
-        return plugin;
-    }
+public class ExamplePlugin extends TubingPlugin {
 
     @Override
-    public void onEnable() {
-        plugin = this;
+    protected void enable() {
         saveDefaultConfig();
         AutoUpdater.updateConfig(this);
-        
-        iocContainer = new IocContainer();
-        iocContainer.init("my.package.here", getConfig());
     }
 
     @Override
-    public void onDisable() {
+    protected void disable() {
+        // no disabling logic
     }
 
 }
 ```
-This is an example project which illustrate the usage of the IocContainer.
-When calling the init method you must pass your package name. This must be the root package of your plugin. The IocContainer will check for dependencies inside this package only.
-The second parameter is the configuration file.
+This is an example project which illustrate the usage of the Tubing framework.You only need to extends the class and the IocContainer will be initialized.
 
 ### @IocBean
 The IocBean annotation is used to tell the IocContainer to instantiate this bean. Only constructor injection is supported.
 For example. Let's say I have a command and service which is triggered by that command.
 
+### @IocCommandHandler
+The IocCommandHandler annotation is an addition to the @IocBean annotation.
+It tells Tubing to register your command. You pass in the command name as defined in your plugin.yml file.
+
+### @IocListener
+The IocListener annotation is an addition to the @IocBean annotation.
+It tells Tubing to register your listener. It takes no arguments
+
+### @IocMessageListener
+The IocMessageListener annotation is an addition to the @IocBean annotation.
+It tells Tubing to register your PluginMessageListener. It takes the channel name as argument
+
+
 #### SimpleCommand
 
 ```
 @IocBean
+@IocCommandHandler("simple-command")
 public class SimpleCommand implements CommandExecutor {
 
     private final SimpleService simpleService;
     
     public SimpleCommand(SimpleService simpleService) {
       this.simpleService = simpleService;
-      // Doing this is not entirely clean but in the concept of mc plugins I find this acceptable
-      // By doing this I also have registration and creation of the command in one spot.
-      ExamplePlugin.get().getCommand("simple-command")).setExecutor(this)
     }
     
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
        this.simpleService.doSomething(sender);
+    }
+}
+```
+
+#### SimpleListener
+
+```
+@IocBean
+@IocListener
+public class SimpleListener implements Listener {
+
+    private final SimpleService simpleService;
+    
+    public SimpleCommand(SimpleService simpleService) {
+      this.simpleService = simpleService;
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onClick(InventoryClickEvent event) {
+        this.simpleService.doSomethingOnClick(event);
+    }
+}
+```
+#### SimpleMessageListener
+
+```
+@IocBean
+@IocMessageListener(channel = "BungeeCord")
+public class SimpleListener implements PluginMessageListener {
+
+    private final SimpleService simpleService;
+    
+    public SimpleCommand(SimpleService simpleService) {
+      this.simpleService = simpleService;
+    }
+    
+    @Override
+    public void onPluginMessageReceived(String channel, Player player, byte[] message) {
+        this.simpleService.doSomethingOnBungeeChannel(channel, message);
     }
 }
 ```
@@ -130,7 +170,7 @@ As you can see I only need to specify the annotation and I can be certain that t
 You can see the SimpleService inject a SimpleRepository. This class is an interface wich I will explain below.
 
 ### Interface injection
-In Mc Ioc there is no need to do anything special for interface injection.
+In Tubing there is no need to do anything special for interface injection.
 If the interface has a class implementing it which is also an IocBean, it will just inject that instance.
 Should the be no instance for that class an exception will be thrown at startup. If there are multiple implementations for that interface instantiated you should use `@IocMultiProvider`
 
@@ -150,7 +190,7 @@ public class MysqlSimpleRepository implements SimpleRepository {
 ```
 
 ### Conditional Bean instantiation
-Mc-Ioc allows you to instantiate beans conditionally depending on configuration properties.
+Tubing allows you to instantiate beans conditionally depending on configuration properties.
 Let's say you support mysql and sqlite database in your plugin. Maybe you also have 2 different repository implementations to support that.
 
 Within the configuration file users of the plugin can set a storage type:
@@ -186,7 +226,7 @@ The IocContainer will only instantiate the right one based on the property file.
 By doing this there is no need to write if else statements in the code.
 
 ### List Injection
-Mc-Ioc supports injection a List of type interface.
+Tubing supports injection a List of type interface.
 
 ```
 public interface ExampleMultiInterface {}
