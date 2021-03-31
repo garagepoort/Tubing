@@ -5,16 +5,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public abstract class TubingPlugin extends JavaPlugin {
 
-    private static TubingPlugin plugin;
     private IocContainer iocContainer = new IocContainer();
-
-    public static TubingPlugin get() {
-        return plugin;
-    }
 
     @Override
     public void onEnable() {
-        plugin = this;
         enable();
         iocContainer.init(this, getConfig());
     }
@@ -28,11 +22,11 @@ public abstract class TubingPlugin extends JavaPlugin {
         beforeReload();
         reloadConfig();
         HandlerList.unregisterAll(this);
-        getServer().getMessenger().unregisterIncomingPluginChannel(plugin);
-        getServer().getMessenger().unregisterOutgoingPluginChannel(plugin);
+        getServer().getMessenger().unregisterIncomingPluginChannel(this);
+        getServer().getMessenger().unregisterOutgoingPluginChannel(this);
 
         iocContainer = new IocContainer();
-        iocContainer.init(plugin, getConfig());
+        iocContainer.init(this, getConfig());
     }
 
     protected void beforeReload() {}
