@@ -15,41 +15,62 @@ import org.slf4j.LoggerFactory;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class IocContainer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IocContainer.class);
     private final Map<Class, Object> beans = new HashMap<>();
     private final IocConditionalPropertyFilter iocConditionalPropertyFilter = new IocConditionalPropertyFilter();
+    private final IocConditionalFilter iocConditionalFilter = new IocConditionalFilter();
+    private Reflections reflections;
 
     public void init(JavaPlugin javaPlugin, FileConfiguration config) {
-        Reflections reflections = new Reflections(javaPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
-        loadIocBeans(config, reflections);
-        loadCommandHandlerBeans(javaPlugin, reflections);
-        loadListenerBeans(javaPlugin, reflections);
-        loadMessageListenerBeans(javaPlugin, reflections);
+        reflections = new Reflections(javaPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
+        loadIocBeans(config);
+        loadCommandHandlerBeans(javaPlugin);
+        loadListenerBeans(javaPlugin);
+        loadMessageListenerBeans(javaPlugin);
     }
 
-    private void loadIocBeans(FileConfiguration config, Reflections reflections) {
-        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
-                .filter(a -> iocConditionalPropertyFilter.isValidBean(a, config))
-                .collect(Collectors.toSet());
+    private void loadIocBeans(FileConfiguration config) {
+        try {
+            Set<Class<?>> configurationClasses = reflections.getTypesAnnotatedWith(TubingConfiguration.class);
+            List<Method> providers = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocBeanProvider.class).stream()).collect(Collectors.toList());
+            Set<Class<?>> providedBeans = new HashSet<>();
+            for (Method provider : providers) {
+                Object invoke = provider.invoke(null);
+                if(invoke != null) {
+                    providedBeans.add((Class) invoke);
+                }
+            }
 
-        for (Class<?> aClass : typesAnnotatedWith) {
-            instantiateBean(reflections, aClass, typesAnnotatedWith, false);
+            Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
+                    .filter(a -> iocConditionalPropertyFilter.isValidBean(a, config))
+                    .filter(iocConditionalFilter::isValidBean)
+                    .collect(Collectors.toSet());
+
+            Set<Class<?>> validBeans = Stream.concat(typesAnnotatedWith.stream(), providedBeans.stream()).collect(Collectors.toSet());
+
+            for (Class<?> aClass : validBeans) {
+                instantiateBean(reflections, aClass, validBeans, providedBeans, false);
+            }
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new IocException("Could not validate @IocConditional method. Make sure this method is static and returns a boolean");
         }
     }
 
-    private void loadCommandHandlerBeans(JavaPlugin javaPlugin, Reflections reflections) {
+    private void loadCommandHandlerBeans(JavaPlugin javaPlugin) {
         Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocCommandHandler.class);
 
         for (Class<?> aClass : typesAnnotatedWith) {
-            if(!CommandExecutor.class.isAssignableFrom(aClass)) {
+            if (!CommandExecutor.class.isAssignableFrom(aClass)) {
                 throw new IocException("IocCommandHandler annotation can only be used on CommandExecutors");
             }
-            if(!beans.containsKey(aClass)) {
+            if (!beans.containsKey(aClass)) {
                 continue;
             }
             CommandExecutor bean = (CommandExecutor) this.get(aClass);
@@ -58,14 +79,14 @@ public class IocContainer {
         }
     }
 
-    private void loadListenerBeans(JavaPlugin javaPlugin, Reflections reflections) {
+    private void loadListenerBeans(JavaPlugin javaPlugin) {
         Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocListener.class);
 
         for (Class<?> aClass : typesAnnotatedWith) {
-            if(!Listener.class.isAssignableFrom(aClass)) {
+            if (!Listener.class.isAssignableFrom(aClass)) {
                 throw new IocException("IocListener annotation can only be used on bukkit Listeners");
             }
-            if(!beans.containsKey(aClass)) {
+            if (!beans.containsKey(aClass)) {
                 continue;
             }
             Listener bean = (Listener) this.get(aClass);
@@ -74,14 +95,14 @@ public class IocContainer {
     }
 
 
-    private void loadMessageListenerBeans(JavaPlugin javaPlugin, Reflections reflections) {
+    private void loadMessageListenerBeans(JavaPlugin javaPlugin) {
         Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocMessageListener.class);
 
         for (Class<?> aClass : typesAnnotatedWith) {
-            if(!PluginMessageListener.class.isAssignableFrom(aClass)) {
+            if (!PluginMessageListener.class.isAssignableFrom(aClass)) {
                 throw new IocException("IocMessageListener annotation can only be used on bukkit PluginMessageListeners");
             }
-            if(!beans.containsKey(aClass)) {
+            if (!beans.containsKey(aClass)) {
                 continue;
             }
             PluginMessageListener bean = (PluginMessageListener) this.get(aClass);
@@ -90,7 +111,7 @@ public class IocContainer {
         }
     }
 
-    private Object instantiateBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, boolean multiProvider) {
+    private Object instantiateBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, Set<Class<?>> providedBeans, boolean multiProvider) {
         LOGGER.debug("[MC-IOC] Instantiating bean [{}]", aClass.getName());
 
         if (multiProvider) {
@@ -98,7 +119,7 @@ public class IocContainer {
             Set<Class<?>> subTypesOf = reflections.getSubTypesOf((Class<Object>) aClass).stream().filter(validBeans::contains).collect(Collectors.toSet());
             List list = (List) beans.get(aClass);
             for (Class<?> subClass : subTypesOf) {
-                Object bean = createBean(reflections, subClass, validBeans);
+                Object bean = createBean(reflections, subClass, validBeans, providedBeans);
                 if (!list.contains(bean)) {
                     list.add(bean);
                 }
@@ -110,7 +131,7 @@ public class IocContainer {
             Class multiClass = aClass.getAnnotation(IocMultiProvider.class).value();
             beans.putIfAbsent(multiClass, new ArrayList<>());
             List list = (List) beans.get(multiClass);
-            Object bean = createBean(reflections, aClass, validBeans);
+            Object bean = createBean(reflections, aClass, validBeans, providedBeans);
             if (!list.contains(bean)) {
                 list.add(bean);
             }
@@ -130,16 +151,16 @@ public class IocContainer {
             if (subTypesOf.size() > 1) {
                 throw new IocException("Multiple beans found with interface " + aClass.getName() + ". At most one bean should be defined. Use @IocMultiProvider for supporting multiple beans with one interface");
             }
-            return createBean(reflections, subTypesOf.iterator().next(), validBeans);
+            return createBean(reflections, subTypesOf.iterator().next(), validBeans, providedBeans);
         }
-        return createBean(reflections, aClass, validBeans);
+        return createBean(reflections, aClass, validBeans, providedBeans);
     }
 
-    private Object createBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans) {
+    private Object createBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, Set<Class<?>> providedBeans) {
         if (beans.containsKey(aClass)) {
             return beans.get(aClass);
         }
-        if (!aClass.isAnnotationPresent(IocBean.class)) {
+        if (!aClass.isAnnotationPresent(IocBean.class) && !providedBeans.contains(aClass)) {
             throw new IocException("Cannot instantiate bean. No IocBean annotation present. [" + aClass.getName() + "]");
         }
         Constructor<?>[] declaredConstructors = aClass.getDeclaredConstructors();
@@ -149,7 +170,7 @@ public class IocContainer {
 
         LOGGER.debug("[MC-IOC] Start creation of bean [{}]", aClass.getName());
         Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
-        List<Object> constructorParams = buildConstructorParams(reflections, validBeans, declaredConstructor);
+        List<Object> constructorParams = buildConstructorParams(reflections, validBeans, providedBeans, declaredConstructor);
 
         try {
             LOGGER.debug("[MC-IOC] Creating new bean [{}] with constructor arguments [{}]", aClass.getName(), constructorParams.stream().map(d -> d.getClass().getName()).collect(Collectors.joining(",")));
@@ -161,7 +182,7 @@ public class IocContainer {
         }
     }
 
-    private List<Object> buildConstructorParams(Reflections reflections, Set<Class<?>> validBeans, Constructor<?> declaredConstructor) {
+    private List<Object> buildConstructorParams(Reflections reflections, Set<Class<?>> validBeans, Set<Class<?>> providedBeans, Constructor<?> declaredConstructor) {
         List<Object> constructorParams = new ArrayList<>();
 
         Class<?>[] parameterTypes = declaredConstructor.getParameterTypes();
@@ -171,10 +192,10 @@ public class IocContainer {
             Optional<Annotation> multiAnnotation = Arrays.stream(parameterAnnotations).filter(a -> a.annotationType().equals(IocMulti.class)).findFirst();
             if (multiAnnotation.isPresent()) {
                 IocMulti iocMulti = (IocMulti) multiAnnotation.get();
-                Object o = instantiateBean(reflections, iocMulti.value(), validBeans, true);
+                Object o = instantiateBean(reflections, iocMulti.value(), validBeans, providedBeans, true);
                 constructorParams.add(o);
             } else {
-                Object o = instantiateBean(reflections, classParam, validBeans, false);
+                Object o = instantiateBean(reflections, classParam, validBeans, providedBeans, false);
                 constructorParams.add(o);
             }
         }
