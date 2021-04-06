@@ -28,15 +28,15 @@ public class IocContainer {
     private final IocConditionalFilter iocConditionalFilter = new IocConditionalFilter();
     private Reflections reflections;
 
-    public void init(JavaPlugin javaPlugin, FileConfiguration config) {
+    public void init(JavaPlugin javaPlugin, Map<String, FileConfiguration> configs) {
         reflections = new Reflections(javaPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
-        loadIocBeans(config);
+        loadIocBeans(configs);
         loadCommandHandlerBeans(javaPlugin);
         loadListenerBeans(javaPlugin);
         loadMessageListenerBeans(javaPlugin);
     }
 
-    private void loadIocBeans(FileConfiguration config) {
+    private void loadIocBeans(Map<String, FileConfiguration> configs) {
         try {
             Set<Class<?>> configurationClasses = reflections.getTypesAnnotatedWith(TubingConfiguration.class);
             List<Method> providers = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocBeanProvider.class).stream()).collect(Collectors.toList());
@@ -49,7 +49,7 @@ public class IocContainer {
             }
 
             Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
-                    .filter(a -> iocConditionalPropertyFilter.isValidBean(a, config))
+                    .filter(a -> iocConditionalPropertyFilter.isValidBean(a, configs))
                     .filter(iocConditionalFilter::isValidBean)
                     .collect(Collectors.toSet());
 

@@ -1,7 +1,11 @@
 package be.garagepoort.mcioc;
 
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class TubingPlugin extends JavaPlugin {
 
@@ -10,7 +14,7 @@ public abstract class TubingPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         enable();
-        iocContainer.init(this, getConfig());
+        iocContainer.init(this, getFileConfigurations());
     }
 
     @Override
@@ -26,7 +30,7 @@ public abstract class TubingPlugin extends JavaPlugin {
         getServer().getMessenger().unregisterOutgoingPluginChannel(this);
 
         iocContainer = new IocContainer();
-        iocContainer.init(this, getConfig());
+        iocContainer.init(this, getFileConfigurations());
     }
 
     protected void beforeReload() {}
@@ -34,6 +38,12 @@ public abstract class TubingPlugin extends JavaPlugin {
     protected abstract void enable();
 
     protected abstract void disable();
+
+    public Map<String, FileConfiguration> getFileConfigurations() {
+        HashMap<String, FileConfiguration> configs = new HashMap<>();
+        configs.put("config", getConfig());
+        return configs;
+    }
 
     public IocContainer getIocContainer() {
         return iocContainer;
