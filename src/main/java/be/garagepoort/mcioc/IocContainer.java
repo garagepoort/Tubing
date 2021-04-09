@@ -40,23 +40,15 @@ public class IocContainer {
         try {
             Set<Class<?>> configurationClasses = reflections.getTypesAnnotatedWith(TubingConfiguration.class);
             List<Method> providers = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocBeanProvider.class).stream()).collect(Collectors.toList());
-            Set<Class<?>> providedBeans = new HashSet<>();
-            for (Method provider : providers) {
-                Object invoke = provider.invoke(null);
-                if(invoke != null) {
-                    providedBeans.add((Class) invoke);
-                }
-            }
-
             Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
                     .filter(a -> iocConditionalPropertyFilter.isValidBean(a, configs))
                     .filter(iocConditionalFilter::isValidBean)
                     .collect(Collectors.toSet());
 
+            Set<Class<?>> providedBeans = providers.stream().map(Method::getReturnType).collect(Collectors.toSet());
             Set<Class<?>> validBeans = Stream.concat(typesAnnotatedWith.stream(), providedBeans.stream()).collect(Collectors.toSet());
-
             for (Class<?> aClass : validBeans) {
-                instantiateBean(reflections, aClass, validBeans, providedBeans, false);
+                instantiateBean(reflections, aClass, validBeans, providers, false);
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new IocException("Could not validate instantiate beans", e);
@@ -111,7 +103,7 @@ public class IocContainer {
         }
     }
 
-    private Object instantiateBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, Set<Class<?>> providedBeans, boolean multiProvider) {
+    private Object instantiateBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, List<Method> providedBeans, boolean multiProvider) throws InvocationTargetException, IllegalAccessException {
         LOGGER.debug("[MC-IOC] Instantiating bean [{}]", aClass.getName());
 
         if (multiProvider) {
@@ -156,13 +148,20 @@ public class IocContainer {
         return createBean(reflections, aClass, validBeans, providedBeans);
     }
 
-    private Object createBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, Set<Class<?>> providedBeans) {
+    private Object createBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, List<Method> providers) throws InvocationTargetException, IllegalAccessException {
         if (beans.containsKey(aClass)) {
             return beans.get(aClass);
         }
-        if (!aClass.isAnnotationPresent(IocBean.class) && !providedBeans.contains(aClass)) {
+
+        Optional<Method> beanProvider = providers.stream().filter(p -> p.getReturnType() == aClass).findFirst();
+        if(beanProvider.isPresent()) {
+            return getProvidedBean(reflections, aClass, validBeans, providers);
+        }
+
+        if (!aClass.isAnnotationPresent(IocBean.class) && providers.stream().map(Method::getReturnType).noneMatch(a -> a == aClass)) {
             throw new IocException("Cannot instantiate bean. No IocBean annotation present. [" + aClass.getName() + "]");
         }
+
         Constructor<?>[] declaredConstructors = aClass.getDeclaredConstructors();
         if (declaredConstructors.length > 1) {
             throw new IocException("Cannot instantiate bean with type " + aClass.getName() + ". Only one constructor should be defined");
@@ -170,7 +169,7 @@ public class IocContainer {
 
         LOGGER.debug("[MC-IOC] Start creation of bean [{}]", aClass.getName());
         Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
-        List<Object> constructorParams = buildConstructorParams(reflections, validBeans, providedBeans, declaredConstructor);
+        List<Object> constructorParams = buildParams(reflections, validBeans, providers, declaredConstructor.getParameterTypes(), declaredConstructor.getParameterAnnotations());
 
         try {
             LOGGER.debug("[MC-IOC] Creating new bean [{}] with constructor arguments [{}]", aClass.getName(), constructorParams.stream().map(d -> d.getClass().getName()).collect(Collectors.joining(",")));
@@ -182,18 +181,29 @@ public class IocContainer {
         }
     }
 
-    private List<Object> buildConstructorParams(Reflections reflections, Set<Class<?>> validBeans, Set<Class<?>> providedBeans, Constructor<?> declaredConstructor) {
+    private Object getProvidedBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, List<Method> providers) throws InvocationTargetException, IllegalAccessException {
+        Optional<Method> beanProvider = providers.stream().filter(p -> p.getReturnType() == aClass).findFirst();
+        if (beanProvider.isPresent()) {
+            List<Object> params = buildParams(reflections, validBeans, providers, beanProvider.get().getParameterTypes(), beanProvider.get().getParameterAnnotations());
+            Object invoke = beanProvider.get().invoke(null, params.toArray());
+            if (invoke != null) {
+                beans.putIfAbsent(beanProvider.get().getReturnType(), invoke);
+                return invoke;
+            }
+        }
+        return null;
+    }
+
+    private List<Object> buildParams(Reflections reflections, Set<Class<?>> validBeans, List<Method> providedBeans, Class<?>[] parameterTypes, Annotation[][] parameterAnnotations) throws InvocationTargetException, IllegalAccessException {
         List<Object> constructorParams = new ArrayList<>();
 
-        Class<?>[] parameterTypes = declaredConstructor.getParameterTypes();
         for (int i = 0; i < parameterTypes.length; i++) {
             Class<?> classParam = parameterTypes[i];
-            Annotation[] parameterAnnotations = declaredConstructor.getParameterAnnotations()[i];
-            Optional<Annotation> multiAnnotation = Arrays.stream(parameterAnnotations).filter(a -> a.annotationType().equals(IocMulti.class)).findFirst();
+            Annotation[] annotations = parameterAnnotations[i];
+            Optional<Annotation> multiAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(IocMulti.class)).findFirst();
             if (multiAnnotation.isPresent()) {
                 IocMulti iocMulti = (IocMulti) multiAnnotation.get();
-                Object o = instantiateBean(reflections, iocMulti.value(), validBeans, providedBeans, true);
-                constructorParams.add(o);
+                constructorParams.add(instantiateBean(reflections, iocMulti.value(), validBeans, providedBeans, true));
             } else {
                 Object o = instantiateBean(reflections, classParam, validBeans, providedBeans, false);
                 constructorParams.add(o);
