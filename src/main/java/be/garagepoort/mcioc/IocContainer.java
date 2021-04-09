@@ -59,7 +59,7 @@ public class IocContainer {
                 instantiateBean(reflections, aClass, validBeans, providedBeans, false);
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IocException("Could not validate @IocConditional method. Make sure this method is static and returns a boolean");
+            throw new IocException("Could not validate instantiate beans", e);
         }
     }
 
