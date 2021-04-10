@@ -136,6 +136,16 @@ public class IocContainer {
                 return existingBean.get();
             }
 
+            // Check if provider can handle it
+            List<Method> currentProviders = providedBeans.stream().filter(p -> p.getReturnType() == aClass).collect(Collectors.toList());
+            if(currentProviders.size() > 1) {
+                throw new IocException("Multiple bean providers found for interface " + aClass.getName() + ". This is currently not supported");
+            }
+            if(currentProviders.size() == 1) {
+                return createBean(reflections, aClass, validBeans, providedBeans);
+            }
+
+            // Find only implementation of interface and instantiate
             Set<Class<?>> subTypesOf = reflections.getSubTypesOf((Class<Object>) aClass).stream().filter(validBeans::contains).collect(Collectors.toSet());
             if (subTypesOf.isEmpty()) {
                 throw new IocException("Cannot instantiate bean with interface " + aClass.getName() + ". No classes implementing this interface");
