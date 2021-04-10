@@ -124,7 +124,7 @@ public class IocContainer {
             beans.putIfAbsent(multiClass, new ArrayList<>());
             List list = (List) beans.get(multiClass);
             Object bean = createBean(reflections, aClass, validBeans, providedBeans);
-            if (!list.contains(bean)) {
+            if (!list.contains(bean) && bean != null) {
                 list.add(bean);
             }
             return bean;
