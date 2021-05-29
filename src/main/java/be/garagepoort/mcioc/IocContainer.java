@@ -41,13 +41,18 @@ public class IocContainer {
             Set<Class<?>> configurationClasses = reflections.getTypesAnnotatedWith(TubingConfiguration.class);
             List<Method> providers = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocBeanProvider.class).stream()).collect(Collectors.toList());
             List<Method> multiProviders = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocMultiProvider.class).stream()).collect(Collectors.toList());
-            Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
+            List<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
                     .filter(a -> iocConditionalPropertyFilter.isValidBean(a, configs))
                     .filter(iocConditionalFilter::isValidBean)
-                    .collect(Collectors.toSet());
+                    .sorted((o1, o2) -> {
+                        IocBean annotation1 = o1.getAnnotation(IocBean.class);
+                        IocBean annotation2 = o2.getAnnotation(IocBean.class);
+                        return Boolean.compare(annotation2.priority(), annotation1.priority());
+                    })
+                    .collect(Collectors.toList());
 
-            Set<Class<?>> providedBeans = providers.stream().map(Method::getReturnType).collect(Collectors.toSet());
-            Set<Class<?>> validBeans = Stream.concat(typesAnnotatedWith.stream(), providedBeans.stream()).collect(Collectors.toSet());
+            Set<Class<?>> providedBeans = providers.stream().map(Method::getReturnType).collect(Collectors.toCollection(LinkedHashSet::new));
+            Set<Class<?>> validBeans = Stream.concat(typesAnnotatedWith.stream(), providedBeans.stream()).collect(Collectors.toCollection(LinkedHashSet::new));
             for (Class<?> aClass : validBeans) {
                 instantiateBean(reflections, aClass, validBeans, providers, multiProviders, false);
             }
