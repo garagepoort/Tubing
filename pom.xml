@@ -109,9 +109,9 @@
 
     <distributionManagement>
         <repository>
-            <id>nexus-staffplusplus</id>
-            <name>Staff++ Nexus Repo</name>
-            <url>http://staffplusplus.org:8081/repository/staffplusplus</url>
+            <id>repsy-staffplusplus</id>
+            <name>Staff++ Repsy Repo</name>
+            <url>https://repo.repsy.io/mvn/garagepoort/staffplusplus</url>
         </repository>
     </distributionManagement>
 
