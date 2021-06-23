@@ -20,6 +20,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static be.garagepoort.mcioc.configuration.PropertyInjector.injectConfigurationProperties;
+
 public class IocContainer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IocContainer.class);
@@ -27,9 +29,11 @@ public class IocContainer {
     private final IocConditionalPropertyFilter iocConditionalPropertyFilter = new IocConditionalPropertyFilter();
     private final IocConditionalFilter iocConditionalFilter = new IocConditionalFilter();
     private Reflections reflections;
+    private Map<String, FileConfiguration> configs;
 
     public void init(JavaPlugin javaPlugin, Map<String, FileConfiguration> configs) {
         reflections = new Reflections(javaPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
+        this.configs = configs;
         loadIocBeans(configs);
         loadCommandHandlerBeans(javaPlugin);
         loadListenerBeans(javaPlugin);
@@ -200,6 +204,7 @@ public class IocContainer {
         try {
             LOGGER.debug("[MC-IOC] Creating new bean [{}] with constructor arguments [{}]", aClass.getName(), constructorParams.stream().map(d -> d.getClass().getName()).collect(Collectors.joining(",")));
             Object bean = declaredConstructor.newInstance(constructorParams.toArray());
+            injectConfigurationProperties(bean, configs);
             beans.putIfAbsent(aClass, bean);
             return bean;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
