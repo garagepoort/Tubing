@@ -21,18 +21,19 @@ public class PropertyInjector {
                     continue;
                 }
                 ConfigProperty annotation = f.getAnnotation(ConfigProperty.class);
-                if (f.isAnnotationPresent(ConfigListTransformer.class)) {
-                    ConfigListTransformer listTransformer = f.getAnnotation(ConfigListTransformer.class);
-                    Constructor<?> declaredConstructor = listTransformer.value().getDeclaredConstructors()[0];
-                    IConfigListTransformer iConfigListTransformer = (IConfigListTransformer) declaredConstructor.newInstance();
+                Optional<Object> configValue = ReflectionUtils.getConfigValue(annotation.value(), configs);
+                if (!configValue.isPresent()) {
+                    continue;
+                }
+                if (f.isAnnotationPresent(ConfigTransformer.class)) {
+                    ConfigTransformer configTransformer = f.getAnnotation(ConfigTransformer.class);
+                    Constructor<?> declaredConstructor = configTransformer.value().getDeclaredConstructors()[0];
+                    IConfigTransformer iConfigTransformer = (IConfigTransformer) declaredConstructor.newInstance();
                     f.setAccessible(true);
-                    f.set(o, iConfigListTransformer.mapConfig(ReflectionUtils.getConfigListValue(annotation.value(), configs)));
+                    f.set(o, iConfigTransformer.mapConfig(configValue.get()));
                 } else {
-                    Optional<Object> configValue = ReflectionUtils.getConfigValue(annotation.value(), configs);
-                    if (configValue.isPresent()) {
                         f.setAccessible(true);
                         f.set(o, configValue.get());
-                    }
                 }
 
             }
@@ -40,5 +41,9 @@ public class PropertyInjector {
         } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
             throw new IocException("Cannot inject property. Make sure the field is public", e);
         }
+    }
+
+    public static Enum getInstance(final String value, final Class enumClass) {
+        return Enum.valueOf(enumClass, value);
     }
 }

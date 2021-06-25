@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface ConfigListTransformer {
+public @interface ConfigTransformer {
 
-    Class<? extends IConfigListTransformer> value();
+    Class<? extends IConfigTransformer> value();
 }
