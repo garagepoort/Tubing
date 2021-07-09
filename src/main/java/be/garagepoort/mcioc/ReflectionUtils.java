@@ -26,16 +26,7 @@ public class ReflectionUtils {
 
     public static <T> Optional<T> getConfigValue(String identifier, Map<String, FileConfiguration> configs) {
 
-        String regexString = Pattern.quote("%") + "(.*?)" + Pattern.quote("%");
-        Pattern pattern = Pattern.compile(regexString);
-        Matcher matcher = pattern.matcher(identifier);
-        while (matcher.find()) {
-            String nestedConfig = matcher.group(1);
-            Optional<String> configValue = getConfigValue(nestedConfig, configs);
-            if(configValue.isPresent()) {
-                identifier = identifier.replace("%" + nestedConfig + "%", configValue.get());
-            }
-        }
+        identifier = replaceNestedValues(identifier, configs);
 
         String configFileId = "config";
         String path = identifier;
@@ -49,6 +40,7 @@ public class ReflectionUtils {
     }
 
     public static Optional<String> getConfigStringValue(String identifier, Map<String, FileConfiguration> configs) {
+        identifier = replaceNestedValues(identifier, configs);
         String configFileId = "config";
         String path = identifier;
 
@@ -60,26 +52,18 @@ public class ReflectionUtils {
         return Optional.ofNullable(configs.get(configFileId).getString(path));
     }
 
-
-    public static List<LinkedHashMap<String, Object>> getConfigListValue(String identifier, Map<String, FileConfiguration> configs) {
-        String configFileId = "config";
-        String path = identifier;
-
-        String[] fileSelectors = identifier.split(":", 2);
-        if (fileSelectors.length == 2) {
-            configFileId = fileSelectors[0];
-            path = fileSelectors[1];
+    private static String replaceNestedValues(String identifier, Map<String, FileConfiguration> configs) {
+        String regexString = Pattern.quote("%") + "(.*?)" + Pattern.quote("%");
+        Pattern pattern = Pattern.compile(regexString);
+        Matcher matcher = pattern.matcher(identifier);
+        while (matcher.find()) {
+            String nestedConfig = matcher.group(1);
+            Optional<String> configValue = getConfigValue(nestedConfig, configs);
+            if(configValue.isPresent()) {
+                identifier = identifier.replace("%" + nestedConfig + "%", configValue.get());
+            }
         }
-        return (List<LinkedHashMap<String, Object>>) configs.get(configFileId).getList(path, new ArrayList<>());
+        return identifier;
     }
 
-
-    public static FileConfiguration getFileConfig(String identifier, Map<String, FileConfiguration> configs) {
-        String configFileId = "config";
-        String[] fileSelectors = identifier.split(":", 2);
-        if (fileSelectors.length == 2) {
-            configFileId = fileSelectors[0];
-        }
-        return configs.get(configFileId);
-    }
 }
