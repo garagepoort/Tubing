@@ -1,5 +1,6 @@
 package be.garagepoort.mcioc;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.lang.annotation.Annotation;
@@ -61,6 +62,8 @@ public class ReflectionUtils {
             Optional<String> configValue = getConfigValue(nestedConfig, configs);
             if(configValue.isPresent()) {
                 identifier = identifier.replace("%" + nestedConfig + "%", configValue.get());
+            }else {
+                Bukkit.getLogger().warning("[Tubing] >> No property found for config: " + nestedConfig);
             }
         }
         return identifier;

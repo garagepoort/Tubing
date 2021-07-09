@@ -2,6 +2,7 @@ package be.garagepoort.mcioc.configuration;
 
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.lang.reflect.Constructor;
@@ -23,6 +24,7 @@ public class PropertyInjector {
                 ConfigProperty annotation = f.getAnnotation(ConfigProperty.class);
                 Optional<Object> configValue = ReflectionUtils.getConfigValue(annotation.value(), configs);
                 if (!configValue.isPresent()) {
+                    Bukkit.getLogger().warning("[Tubing] >> No property found for config: " + annotation.value());
                     continue;
                 }
                 if (f.isAnnotationPresent(ConfigTransformer.class)) {
