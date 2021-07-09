@@ -5,6 +5,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ReflectionUtils {
 
@@ -23,6 +25,18 @@ public class ReflectionUtils {
     }
 
     public static <T> Optional<T> getConfigValue(String identifier, Map<String, FileConfiguration> configs) {
+
+        String regexString = Pattern.quote("%") + "(.*?)" + Pattern.quote("%");
+        Pattern pattern = Pattern.compile(regexString);
+        Matcher matcher = pattern.matcher(identifier);
+        while (matcher.find()) {
+            String nestedConfig = matcher.group(1);
+            Optional<String> configValue = getConfigValue(nestedConfig, configs);
+            if(configValue.isPresent()) {
+                identifier = identifier.replace("%" + nestedConfig + "%", configValue.get());
+            }
+        }
+
         String configFileId = "config";
         String path = identifier;
 
