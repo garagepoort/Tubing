@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -59,6 +60,15 @@ public class GuiActionService {
                 player.closeInventory();
                 player.openInventory(inventory.getInventory());
                 setInventory(player, inventory);
+            } else if (returnType == Void.class || returnType == void.class) {
+                method.invoke(bean, methodParams);
+                player.closeInventory();
+                removeInventory(player);
+            } else if (returnType == String.class) {
+                String redirectAction = (String) method.invoke(bean, methodParams);
+                executeAction(player, redirectAction);
+            } else {
+                throw new IocException("Invalid returnType [" + returnType + "] for GuiController [" + method.getDeclaringClass() + "]");
             }
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new IocException("Unable to execute gui action", e);
@@ -74,7 +84,7 @@ public class GuiActionService {
             if (paramAnnotation.isPresent()) {
                 GuiParam param = (GuiParam) paramAnnotation.get();
                 if (paramMap.containsKey(param.value())) {
-                    methodParams[i] = toObject(parameterTypes[i], paramMap.get(param.value()));
+                    methodParams[i] = toObject(parameterTypes[i], URLDecoder.decode(paramMap.get(param.value())));
                 }
             }
         }
