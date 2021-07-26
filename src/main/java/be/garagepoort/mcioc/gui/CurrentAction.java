@@ -7,9 +7,5 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
-public @interface GuiParam {
-
-    String value();
-
-    String defaultValue() default "";
+public @interface CurrentAction {
 }

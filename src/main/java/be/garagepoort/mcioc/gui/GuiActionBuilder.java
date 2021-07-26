@@ -20,8 +20,10 @@ public class GuiActionBuilder {
     }
 
     public GuiActionBuilder param(String key, String value) {
-        String encode = URLEncoder.encode(value);
-        params.put(key, encode);
+        if (value != null) {
+            String encode = URLEncoder.encode(value);
+            params.put(key, encode);
+        }
         return this;
     }
 

@@ -4,6 +4,7 @@ import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
 import be.garagepoort.mcioc.TubingPlugin;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.entity.Player;
 
 import java.lang.annotation.Annotation;
@@ -42,12 +43,8 @@ public class GuiActionService {
             }
 
             Method method = guiActions.get(action);
-
-            Object[] methodParams = new Object[method.getParameterCount()];
-            methodParams[0] = player;
-
             Map<String, String> paramMap = getParams(split);
-            addMethodParams(method, paramMap, methodParams);
+            Object[] methodParams = getMethodParams(method, paramMap, actionQuery, player);
 
             Object bean = TubingPlugin.getPlugin().getIocContainer().get(method.getDeclaringClass());
             if (bean == null) {
@@ -75,7 +72,8 @@ public class GuiActionService {
         }
     }
 
-    private void addMethodParams(Method method, Map<String, String> paramMap, Object[] methodParams) {
+    private Object[] getMethodParams(Method method, Map<String, String> paramMap, String actionQuery, Player player) {
+        Object[] methodParams = new Object[method.getParameterCount()];
         Class<?>[] parameterTypes = method.getParameterTypes();
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
         for (int i = 0; i < parameterTypes.length; i++) {
@@ -84,13 +82,23 @@ public class GuiActionService {
             if (paramAnnotation.isPresent()) {
                 GuiParam param = (GuiParam) paramAnnotation.get();
                 if (paramMap.containsKey(param.value())) {
-                    methodParams[i] = toObject(parameterTypes[i], URLDecoder.decode(paramMap.get(param.value())));
+                    methodParams[i] = toObject(parameterTypes[i], URLDecoder.decode(paramMap.get(param.value())), param);
+                } else if (StringUtils.isNotBlank(param.defaultValue())) {
+                    methodParams[i] = toObject(parameterTypes[i], param.defaultValue(), param);
+                }
+            } else if (parameterTypes[i] == Player.class) {
+                methodParams[i] = player;
+            } else {
+                Optional<Annotation> currentActionAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(CurrentAction.class)).findFirst();
+                if (currentActionAnnotation.isPresent()) {
+                    methodParams[i] = actionQuery;
                 }
             }
         }
+        return methodParams;
     }
 
-    private Object toObject(Class clazz, String value) {
+    private Object toObject(Class clazz, String value, GuiParam param) {
         if (Boolean.class == clazz || Boolean.TYPE == clazz) return Boolean.parseBoolean(value);
         if (Byte.class == clazz || Byte.TYPE == clazz) return Byte.parseByte(value);
         if (Short.class == clazz || Short.TYPE == clazz) return Short.parseShort(value);

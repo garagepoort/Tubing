@@ -23,7 +23,7 @@ public class InventoryClick implements Listener {
             Optional<TubingGui> inventory = actionService.getTubingGui(player);
             inventory.ifPresent(tubingGui -> {
                 if (event.getClickedInventory().equals(tubingGui.getInventory())) {
-                    String action = tubingGui.getActions().get(slot);
+                    String action = event.getClick().isLeftClick() ? tubingGui.getLeftActions().get(slot) : tubingGui.getRightActions().get(slot);
                     if (StringUtils.isNotBlank(action)) {
                         if (action.equals(TubingGuiActions.NOOP)) {
                             event.setCancelled(true);
