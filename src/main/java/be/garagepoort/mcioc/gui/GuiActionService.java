@@ -61,6 +61,12 @@ public class GuiActionService {
                 method.invoke(bean, methodParams);
                 player.closeInventory();
                 removeInventory(player);
+            } else if (returnType == GuiActionReturnType.class) {
+                GuiActionReturnType actionReturnType = (GuiActionReturnType) method.invoke(bean, methodParams);
+                if (actionReturnType != GuiActionReturnType.KEEP_OPEN) {
+                    player.closeInventory();
+                    removeInventory(player);
+                }
             } else if (returnType == String.class) {
                 String redirectAction = (String) method.invoke(bean, methodParams);
                 executeAction(player, redirectAction);
@@ -82,9 +88,9 @@ public class GuiActionService {
             if (paramAnnotation.isPresent()) {
                 GuiParam param = (GuiParam) paramAnnotation.get();
                 if (paramMap.containsKey(param.value())) {
-                    methodParams[i] = toObject(parameterTypes[i], URLDecoder.decode(paramMap.get(param.value())), param);
+                    methodParams[i] = toObject(parameterTypes[i], URLDecoder.decode(paramMap.get(param.value())));
                 } else if (StringUtils.isNotBlank(param.defaultValue())) {
-                    methodParams[i] = toObject(parameterTypes[i], param.defaultValue(), param);
+                    methodParams[i] = toObject(parameterTypes[i], param.defaultValue());
                 }
             } else if (parameterTypes[i] == Player.class) {
                 methodParams[i] = player;
@@ -94,11 +100,15 @@ public class GuiActionService {
                     methodParams[i] = actionQuery;
                 }
             }
+            Optional<Annotation> allParamsAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(GuiParams.class)).findFirst();
+            if (allParamsAnnotation.isPresent()) {
+                methodParams[i] = paramMap;
+            }
         }
         return methodParams;
     }
 
-    private Object toObject(Class clazz, String value, GuiParam param) {
+    private Object toObject(Class clazz, String value) {
         if (Boolean.class == clazz || Boolean.TYPE == clazz) return Boolean.parseBoolean(value);
         if (Byte.class == clazz || Byte.TYPE == clazz) return Byte.parseByte(value);
         if (Short.class == clazz || Short.TYPE == clazz) return Short.parseShort(value);

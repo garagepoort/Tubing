@@ -8,6 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 
 import java.util.Optional;
 
@@ -31,10 +32,23 @@ public class InventoryClick implements Listener {
                         }
 
                         actionService.executeAction(player, action);
-                        event.setCancelled(true);
                     }
+                    event.setCancelled(true);
                 }
             });
         }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void dragItem(InventoryDragEvent event) {
+        Player player = (Player) event.getWhoClicked();
+        GuiActionService actionService = TubingPlugin.getPlugin().getIocContainer().get(GuiActionService.class);
+
+        Optional<TubingGui> inventory = actionService.getTubingGui(player);
+        inventory.ifPresent(tubingGui -> {
+            if (event.getInventory().equals(tubingGui.getInventory())) {
+                event.setCancelled(true);
+            }
+        });
     }
 }

@@ -3,15 +3,39 @@ package be.garagepoort.mcioc.gui;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class GuiActionBuilder {
 
-    private final HashMap<String, String> params = new HashMap<>();
+    private Map<String, String> params = new HashMap<>();
     private String action;
 
     public static GuiActionBuilder builder() {
         return new GuiActionBuilder();
+    }
+
+    public static GuiActionBuilder fromAction(String actionQuery) {
+
+        String[] split = actionQuery.split(Pattern.quote("?"), 2);
+        GuiActionBuilder actionBuilder = new GuiActionBuilder();
+        actionBuilder.action = split[0];
+        actionBuilder.params = getParams(split);
+
+        return actionBuilder;
+    }
+
+    private static Map<String, String> getParams(String[] split) {
+        Map<String, String> paramMap = new HashMap<>();
+        if (split.length > 1) {
+            String[] queryParams = split[1].split("&");
+            for (String queryParam : queryParams) {
+                String[] paramKeyValue = queryParam.split("=");
+                paramMap.put(paramKeyValue[0], paramKeyValue[1]);
+            }
+        }
+        return paramMap;
     }
 
     public GuiActionBuilder action(String action) {
@@ -27,6 +51,7 @@ public class GuiActionBuilder {
         return this;
     }
 
+
     public String build() {
         if (params.isEmpty()) {
             return action;
@@ -39,4 +64,5 @@ public class GuiActionBuilder {
 
         return result + String.join("&", queryParams);
     }
+
 }
