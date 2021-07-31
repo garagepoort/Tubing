@@ -1,5 +1,7 @@
 package be.garagepoort.mcioc.gui;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +46,7 @@ public class GuiActionBuilder {
     }
 
     public GuiActionBuilder param(String key, String value) {
-        if (value != null) {
+        if (StringUtils.isNotBlank(value)) {
             String encode = URLEncoder.encode(value);
             params.put(key, encode);
         }
