@@ -31,9 +31,9 @@
             <version>0.9.12</version>
         </dependency>
         <dependency>
-            <groupId>org.thymeleaf</groupId>
-            <artifactId>thymeleaf</artifactId>
-            <version>3.0.12.RELEASE</version>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <version>2.3.31</version>
         </dependency>
         <dependency>
             <groupId>org.jsoup</groupId>
@@ -106,8 +106,8 @@
                             </filters>
                             <relocations>
                                 <relocation>
-                                    <pattern>org.thymeleaf.</pattern>
-                                    <shadedPattern>be.garagepoort.mcioc.org.thymeleaf.</shadedPattern>
+                                    <pattern>org.freemarker.</pattern>
+                                    <shadedPattern>be.garagepoort.mcioc.org.freemarker.</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.jsoup.</pattern>
