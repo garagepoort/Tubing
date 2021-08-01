@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>be.garagepoort.mcioc</groupId>
     <artifactId>tubing</artifactId>
-    <version>2.4.2</version>
+    <version>2.5.0</version>
 
     <properties>
         <spigot.version>1.16.3-R0.1-SNAPSHOT</spigot.version>
@@ -29,6 +29,16 @@
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
             <version>0.9.12</version>
+        </dependency>
+        <dependency>
+            <groupId>org.thymeleaf</groupId>
+            <artifactId>thymeleaf</artifactId>
+            <version>3.0.12.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.14.1</version>
         </dependency>
     </dependencies>
 
@@ -95,6 +105,14 @@
                                 </filter>
                             </filters>
                             <relocations>
+                                <relocation>
+                                    <pattern>org.thymeleaf.</pattern>
+                                    <shadedPattern>be.garagepoort.mcioc.org.thymeleaf.</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.jsoup.</pattern>
+                                    <shadedPattern>be.garagepoort.mcioc.org.jsoup.</shadedPattern>
+                                </relocation>
                                 <relocation>
                                     <pattern>org.reflections.</pattern>
                                     <shadedPattern>be.garagepoort.mcioc.org.reflections.</shadedPattern>
