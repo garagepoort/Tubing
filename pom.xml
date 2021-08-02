@@ -106,8 +106,8 @@
                             </filters>
                             <relocations>
                                 <relocation>
-                                    <pattern>org.freemarker.</pattern>
-                                    <shadedPattern>be.garagepoort.mcioc.org.freemarker.</shadedPattern>
+                                    <pattern>freemarker.</pattern>
+                                    <shadedPattern>be.garagepoort.mcioc.freemarker.</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.jsoup.</pattern>

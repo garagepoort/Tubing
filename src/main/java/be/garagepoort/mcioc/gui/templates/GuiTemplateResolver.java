@@ -5,11 +5,14 @@ import be.garagepoort.mcioc.TubingPlugin;
 import be.garagepoort.mcioc.gui.TubingGui;
 import be.garagepoort.mcioc.gui.TubingGuiException;
 import freemarker.template.Configuration;
+import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import freemarker.template.TemplateModel;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jsoup.Jsoup;
@@ -23,15 +26,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @IocBean
 public class GuiTemplateResolver {
 
     private final Configuration freemarkerConfiguration;
+    private final DefaultObjectWrapper defaultObjectWrapper;
 
     public GuiTemplateResolver() {
         freemarkerConfiguration = new Configuration(Configuration.VERSION_2_3_28);
+        defaultObjectWrapper = new DefaultObjectWrapper(Configuration.VERSION_2_3_28);
         freemarkerConfiguration.setClassForTemplateLoading(TubingPlugin.getPlugin().getClass(), "/");
     }
 
@@ -42,7 +48,21 @@ public class GuiTemplateResolver {
     public TubingGui resolve(String templatePath, Map<String, Object> params) {
         try {
             Template template = freemarkerConfiguration.getTemplate(templatePath);
+            TemplateModel statics = defaultObjectWrapper.getStaticModels();
             StringWriter stringWriter = new StringWriter();
+
+            Map<String, FileConfiguration> fileConfigurations = TubingPlugin.getPlugin().getFileConfigurations();
+            fileConfigurations.forEach((k, v) -> {
+                Set<String> keys = v.getKeys(true);
+                for (String key : keys) {
+                    params.put(k + ":" + key, v.get(key));
+                    if (k.equalsIgnoreCase("config")) {
+                        params.put(key, v.get(key));
+                    }
+                }
+            });
+
+            params.put("statics", statics);
             template.process(params, stringWriter);
             return parseHtml(stringWriter.toString());
         } catch (IOException | TemplateException e) {
@@ -65,23 +85,26 @@ public class GuiTemplateResolver {
         TubingGui.Builder builder = new TubingGui.Builder(format(title), size);
         Elements guiItems = tubingGuiElement.select("GuiItem");
         for (Element guiItem : guiItems) {
-            int slot = Integer.parseInt(guiItem.attr("slot"));
             String leftClickAction = guiItem.attr("onLeftClick");
             String rightClickAction = guiItem.attr("onRightClick");
-            String material = guiItem.select("Material").text();
-            String name = guiItem.select("Name").text();
-
-            Element loreElement = guiItem.selectFirst("Lore");
-            List<String> loreLines = new ArrayList<>();
-            if (loreElement != null) {
-                Elements loreLinesElements = loreElement.select("LoreLine");
-                loreLines = loreLinesElements.stream().map(Element::text).collect(Collectors.toList());
-            }
-
+            int slot = Integer.parseInt(guiItem.attr("slot"));
+            String material = guiItem.attr("material");
+            String name = guiItem.attr("name");
+            List<String> loreLines = parseLoreLines(guiItem);
             builder.addItem(leftClickAction, rightClickAction, slot, itemStack(material, name, loreLines));
         }
 
         return builder.build();
+    }
+
+    private List<String> parseLoreLines(Element guiItem) {
+        Element loreElement = guiItem.selectFirst("Lore");
+        List<String> loreLines = new ArrayList<>();
+        if (loreElement != null) {
+            Elements loreLinesElements = loreElement.select("LoreLine");
+            loreLines = loreLinesElements.stream().map(Element::text).collect(Collectors.toList());
+        }
+        return loreLines;
     }
 
     private ItemStack itemStack(String material, String name, List<String> lore) {
