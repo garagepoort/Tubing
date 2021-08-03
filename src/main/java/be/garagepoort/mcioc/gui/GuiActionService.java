@@ -4,6 +4,8 @@ import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
 import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.gui.templates.GuiTemplateResolver;
+import be.garagepoort.mcioc.gui.templates.GuiTemplate;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.entity.Player;
 
@@ -22,8 +24,13 @@ import java.util.regex.Pattern;
 
 @IocBean
 public class GuiActionService {
+    private final GuiTemplateResolver guiTemplateResolver;
     private final Map<String, Method> guiActions = new HashMap<>();
     private final Map<UUID, TubingGui> inventories = new HashMap<>();
+
+    public GuiActionService(GuiTemplateResolver guiTemplateResolver) {
+        this.guiTemplateResolver = guiTemplateResolver;
+    }
 
     public void setInventory(Player player, TubingGui tubingGui) {
         inventories.put(player.getUniqueId(), tubingGui);
@@ -53,10 +60,8 @@ public class GuiActionService {
 
             Class<?> returnType = method.getReturnType();
             if (returnType == TubingGui.class) {
-                TubingGui inventory = (TubingGui) method.invoke(bean, methodParams);
-                player.closeInventory();
-                player.openInventory(inventory.getInventory());
-                setInventory(player, inventory);
+                TubingGui tubingGui = (TubingGui) method.invoke(bean, methodParams);
+                showGui(player, tubingGui);
             } else if (returnType == Void.class || returnType == void.class) {
                 method.invoke(bean, methodParams);
                 player.closeInventory();
@@ -67,6 +72,15 @@ public class GuiActionService {
                     player.closeInventory();
                     removeInventory(player);
                 }
+            } else if (returnType == GuiTemplate.class) {
+                GuiTemplate guiTemplate = (GuiTemplate) method.invoke(bean, methodParams);
+                Map<String, Object> templateParams = getTemplateParams(method, paramMap, actionQuery, player);
+                templateParams.forEach((k, v) -> {
+                    if (!guiTemplate.getParams().containsKey(k)) {
+                        guiTemplate.getParams().put(k, v);
+                    }
+                });
+                showGui(player, guiTemplateResolver.resolve(guiTemplate.getTemplate(), guiTemplate.getParams()));
             } else if (returnType == String.class) {
                 String redirectAction = (String) method.invoke(bean, methodParams);
                 executeAction(player, redirectAction);
@@ -76,6 +90,12 @@ public class GuiActionService {
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new IocException("Unable to execute gui action", e);
         }
+    }
+
+    private void showGui(Player player, TubingGui inventory) {
+        player.closeInventory();
+        player.openInventory(inventory.getInventory());
+        setInventory(player, inventory);
     }
 
     private Object[] getMethodParams(Method method, Map<String, String> paramMap, String actionQuery, Player player) {
@@ -105,6 +125,32 @@ public class GuiActionService {
                 methodParams[i] = paramMap;
             }
         }
+        return methodParams;
+    }
+
+    private Map<String, Object> getTemplateParams(Method method, Map<String, String> paramMap, String actionQuery, Player player) {
+        Map<String, Object> methodParams = new HashMap<>();
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+        for (int i = 0; i < parameterTypes.length; i++) {
+            Annotation[] annotations = parameterAnnotations[i];
+            Optional<Annotation> paramAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(GuiParam.class)).findFirst();
+            if (paramAnnotation.isPresent()) {
+                GuiParam param = (GuiParam) paramAnnotation.get();
+                if (paramMap.containsKey(param.value())) {
+                    methodParams.put(param.value(), toObject(parameterTypes[i], URLDecoder.decode(paramMap.get(param.value()))));
+                } else if (StringUtils.isNotBlank(param.defaultValue())) {
+                    methodParams.put(param.value(), toObject(parameterTypes[i], param.defaultValue()));
+                }
+            }
+        }
+        methodParams.put("player", player);
+        methodParams.put("currentAction", actionQuery);
+        paramMap.forEach((k, v) -> {
+            if (!methodParams.containsKey(k)) {
+                methodParams.put(k, URLDecoder.decode(v));
+            }
+        });
         return methodParams;
     }
 
