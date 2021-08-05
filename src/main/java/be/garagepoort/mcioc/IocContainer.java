@@ -105,7 +105,7 @@ public class IocContainer {
 
         for (Class<?> aClass : typesAnnotatedWith) {
             if (!Listener.class.isAssignableFrom(aClass)) {
-                throw new IocException("IocListener annotation can only be used on bukkit Listeners");
+                throw new IocException("IocListener annotation can only be used on bukkit Listeners. Failing class [" + aClass + "]");
             }
             if (!beans.containsKey(aClass)) {
                 continue;

@@ -13,6 +13,8 @@ import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jsoup.Jsoup;
@@ -90,8 +92,9 @@ public class GuiTemplateResolver {
             int slot = Integer.parseInt(guiItem.attr("slot"));
             String material = guiItem.attr("material");
             String name = guiItem.attr("name");
+            boolean enchanted = guiItem.hasAttr("enchanted");
             List<String> loreLines = parseLoreLines(guiItem);
-            builder.addItem(leftClickAction, rightClickAction, slot, itemStack(material, name, loreLines));
+            builder.addItem(leftClickAction, rightClickAction, slot, itemStack(material, name, loreLines, enchanted));
         }
 
         return builder.build();
@@ -107,12 +110,19 @@ public class GuiTemplateResolver {
         return loreLines;
     }
 
-    private ItemStack itemStack(String material, String name, List<String> lore) {
+    private ItemStack itemStack(String material, String name, List<String> lore, boolean enchanted) {
         ItemStack itemStack = new ItemStack(Material.valueOf(material));
         itemStack.setAmount(1);
 
         addName(itemStack, name);
         addLore(itemStack, lore);
+
+        if (enchanted) {
+            itemStack.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 1);
+            ItemMeta meta = itemStack.getItemMeta();
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            itemStack.setItemMeta(meta);
+        }
         return itemStack;
     }
 
