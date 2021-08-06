@@ -1,4 +1,4 @@
-package be.garagepoort.mcioc.gui;
+package be.garagepoort.mcioc.gui.exceptions;
 
 public class TubingGuiException extends RuntimeException{
     public TubingGuiException(String message) {

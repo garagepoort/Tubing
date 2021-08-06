@@ -4,9 +4,11 @@ import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
 import be.garagepoort.mcioc.TubingPlugin;
-import be.garagepoort.mcioc.gui.templates.GuiTemplateResolver;
+import be.garagepoort.mcioc.gui.exceptions.GuiExceptionHandler;
 import be.garagepoort.mcioc.gui.templates.GuiTemplate;
+import be.garagepoort.mcioc.gui.templates.GuiTemplateResolver;
 import org.apache.commons.lang.StringUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.lang.annotation.Annotation;
@@ -27,6 +29,7 @@ public class GuiActionService {
     private final GuiTemplateResolver guiTemplateResolver;
     private final Map<String, Method> guiActions = new HashMap<>();
     private final Map<UUID, TubingGui> inventories = new HashMap<>();
+    private final Map<Class<? extends Exception>, GuiExceptionHandler> exceptionHandlers = new HashMap<>();
 
     public GuiActionService(GuiTemplateResolver guiTemplateResolver) {
         this.guiTemplateResolver = guiTemplateResolver;
@@ -38,6 +41,10 @@ public class GuiActionService {
 
     public Optional<TubingGui> getTubingGui(Player player) {
         return Optional.ofNullable(inventories.get(player.getUniqueId()));
+    }
+
+    public void registerExceptionHandler(Class<? extends Exception> clazz, GuiExceptionHandler guiExceptionHandler) {
+        exceptionHandlers.put(clazz, guiExceptionHandler);
     }
 
     public void executeAction(Player player, String actionQuery) {
@@ -58,44 +65,101 @@ public class GuiActionService {
                 throw new IocException("No GuiController found to handle action [" + actionQuery + "]. Tried finding [" + method.getClass() + "]");
             }
 
-            Class<?> returnType = method.getReturnType();
-            if (returnType == TubingGui.class) {
-                TubingGui tubingGui = (TubingGui) method.invoke(bean, methodParams);
-                showGui(player, tubingGui);
-            } else if (returnType == Void.class || returnType == void.class) {
-                method.invoke(bean, methodParams);
-                player.closeInventory();
-                removeInventory(player);
-            } else if (returnType == GuiActionReturnType.class) {
-                GuiActionReturnType actionReturnType = (GuiActionReturnType) method.invoke(bean, methodParams);
-                if (actionReturnType != GuiActionReturnType.KEEP_OPEN) {
-                    player.closeInventory();
-                    removeInventory(player);
+            try {
+                Object invokedReturnedObject = method.invoke(bean, methodParams);
+                if (invokedReturnedObject instanceof AsyncGui) {
+                    processAsyncGuiAction(player, actionQuery, method, paramMap, (AsyncGui) invokedReturnedObject);
+                } else {
+                    processGuiAction(player, actionQuery, method, paramMap, invokedReturnedObject);
                 }
-            } else if (returnType == GuiTemplate.class) {
-                GuiTemplate guiTemplate = (GuiTemplate) method.invoke(bean, methodParams);
-                Map<String, Object> templateParams = getTemplateParams(method, paramMap, actionQuery, player);
-                templateParams.forEach((k, v) -> {
-                    if (!guiTemplate.getParams().containsKey(k)) {
-                        guiTemplate.getParams().put(k, v);
-                    }
-                });
-                showGui(player, guiTemplateResolver.resolve(guiTemplate.getTemplate(), guiTemplate.getParams()));
-            } else if (returnType == String.class) {
-                String redirectAction = (String) method.invoke(bean, methodParams);
-                executeAction(player, redirectAction);
-            } else {
-                throw new IocException("Invalid returnType [" + returnType + "] for GuiController [" + method.getDeclaringClass() + "]");
+
+            } catch (InvocationTargetException e) {
+                handleException(player, e.getCause());
             }
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (Throwable e) {
             throw new IocException("Unable to execute gui action", e);
         }
     }
 
-    private void showGui(Player player, TubingGui inventory) {
-        player.closeInventory();
-        player.openInventory(inventory.getInventory());
-        setInventory(player, inventory);
+    private void processAsyncGuiAction(Player player, String actionQuery, Method method, Map<String, String> paramMap, AsyncGui invokedReturnedObject) {
+        Bukkit.getScheduler().runTaskAsynchronously(TubingPlugin.getPlugin(), () -> {
+            try {
+                AsyncGui asyncGui = invokedReturnedObject;
+                Object run = asyncGui.getAsyncGuiExecutor().run();
+                Bukkit.getScheduler().runTaskLater(TubingPlugin.getPlugin(), () -> processGuiAction(player, actionQuery, method, paramMap, run), 1);
+            } catch (Throwable e) {
+                try {
+                    handleException(player, e);
+                } catch (Throwable throwable) {
+                    throw new IocException("Unable to execute gui action", e);
+                }
+            }
+        });
+    }
+
+    private void handleException(Player player, Throwable e) throws Throwable {
+        if (exceptionHandlers.containsKey(e.getClass())) {
+            exceptionHandlers.get(e.getClass()).accept(player, e);
+            player.closeInventory();
+            removeInventory(player);
+            return;
+        }
+
+        Optional<Class<? extends Exception>> parentException = exceptionHandlers.keySet().stream()
+                .filter(c -> c.isAssignableFrom(e.getClass()))
+                .findFirst();
+
+        if (parentException.isPresent()) {
+            exceptionHandlers.get(parentException.get()).accept(player, e);
+            player.closeInventory();
+            removeInventory(player);
+            return;
+        }
+
+        throw e;
+    }
+
+    private void processGuiAction(Player player, String actionQuery, Method method, Map<String, String> paramMap, Object invokedReturnedObject) {
+        if (invokedReturnedObject instanceof TubingGui) {
+            TubingGui tubingGui = (TubingGui) invokedReturnedObject;
+            showGui(player, tubingGui);
+        } else if (invokedReturnedObject == null) {
+            player.closeInventory();
+            removeInventory(player);
+        } else if (invokedReturnedObject instanceof GuiActionReturnType) {
+            GuiActionReturnType actionReturnType = (GuiActionReturnType) invokedReturnedObject;
+            if (actionReturnType != GuiActionReturnType.KEEP_OPEN) {
+                player.closeInventory();
+                removeInventory(player);
+            }
+        } else if (invokedReturnedObject instanceof GuiTemplate) {
+            GuiTemplate guiTemplate = (GuiTemplate) invokedReturnedObject;
+            Map<String, Object> templateParams = getTemplateParams(method, paramMap, actionQuery, player);
+            templateParams.forEach((k, v) -> {
+                if (!guiTemplate.getParams().containsKey(k)) {
+                    guiTemplate.getParams().put(k, v);
+                }
+            });
+
+            showGuiTemplate(player, guiTemplate);
+        } else if (invokedReturnedObject instanceof String) {
+            String redirectAction = (String) invokedReturnedObject;
+            executeAction(player, redirectAction);
+        } else {
+            throw new IocException("Invalid returnType [" + invokedReturnedObject.getClass() + "] for GuiController [" + method.getDeclaringClass() + "]");
+        }
+    }
+
+    public void showGui(Player player, TubingGui inventory) {
+        Bukkit.getScheduler().runTaskLater(TubingPlugin.getPlugin(), () -> {
+            player.closeInventory();
+            player.openInventory(inventory.getInventory());
+            setInventory(player, inventory);
+        }, 1);
+    }
+
+    public void showGuiTemplate(Player player, GuiTemplate guiTemplate) {
+        showGui(player, guiTemplateResolver.resolve(guiTemplate.getTemplate(), guiTemplate.getParams()));
     }
 
     private Object[] getMethodParams(Method method, Map<String, String> paramMap, String actionQuery, Player player) {
