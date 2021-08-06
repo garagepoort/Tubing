@@ -4,7 +4,10 @@ import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
 import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.gui.actionquery.ActionQueryParser;
 import be.garagepoort.mcioc.gui.exceptions.GuiExceptionHandler;
+import be.garagepoort.mcioc.gui.templates.ChatTemplate;
+import be.garagepoort.mcioc.gui.templates.ChatTemplateResolver;
 import be.garagepoort.mcioc.gui.templates.GuiTemplate;
 import be.garagepoort.mcioc.gui.templates.GuiTemplateResolver;
 import org.apache.commons.lang.StringUtils;
@@ -27,12 +30,16 @@ import java.util.regex.Pattern;
 @IocBean
 public class GuiActionService {
     private final GuiTemplateResolver guiTemplateResolver;
+    private final ChatTemplateResolver chatTemplateResolver;
+    private final ActionQueryParser actionQueryParser;
     private final Map<String, Method> guiActions = new HashMap<>();
     private final Map<UUID, TubingGui> inventories = new HashMap<>();
     private final Map<Class<? extends Exception>, GuiExceptionHandler> exceptionHandlers = new HashMap<>();
 
-    public GuiActionService(GuiTemplateResolver guiTemplateResolver) {
+    public GuiActionService(GuiTemplateResolver guiTemplateResolver, ChatTemplateResolver chatTemplateResolver, ActionQueryParser actionQueryParser) {
         this.guiTemplateResolver = guiTemplateResolver;
+        this.chatTemplateResolver = chatTemplateResolver;
+        this.actionQueryParser = actionQueryParser;
     }
 
     public void setInventory(Player player, TubingGui tubingGui) {
@@ -57,8 +64,8 @@ public class GuiActionService {
             }
 
             Method method = guiActions.get(action);
-            Map<String, String> paramMap = getParams(split);
-            Object[] methodParams = getMethodParams(method, paramMap, actionQuery, player);
+            Map<String, String> paramMap = actionQueryParser.getParams(actionQuery);
+            Object[] methodParams = actionQueryParser.getMethodParams(method, actionQuery, player);
 
             Object bean = TubingPlugin.getPlugin().getIocContainer().get(method.getDeclaringClass());
             if (bean == null) {
@@ -134,20 +141,26 @@ public class GuiActionService {
             }
         } else if (invokedReturnedObject instanceof GuiTemplate) {
             GuiTemplate guiTemplate = (GuiTemplate) invokedReturnedObject;
-            Map<String, Object> templateParams = getTemplateParams(method, paramMap, actionQuery, player);
-            templateParams.forEach((k, v) -> {
-                if (!guiTemplate.getParams().containsKey(k)) {
-                    guiTemplate.getParams().put(k, v);
-                }
-            });
-
+            addTemplateParams(player, actionQuery, method, paramMap, guiTemplate.getParams());
             showGuiTemplate(player, guiTemplate);
+        } else if (invokedReturnedObject instanceof ChatTemplate) {
+            ChatTemplate chatTemplate = (ChatTemplate) invokedReturnedObject;
+            addTemplateParams(player, actionQuery, method, paramMap, chatTemplate.getParams());
+            showChatTemplate(player, chatTemplate);
         } else if (invokedReturnedObject instanceof String) {
             String redirectAction = (String) invokedReturnedObject;
             executeAction(player, redirectAction);
         } else {
             throw new IocException("Invalid returnType [" + invokedReturnedObject.getClass() + "] for GuiController [" + method.getDeclaringClass() + "]");
         }
+    }
+
+    public void showGuiTemplate(Player player, GuiTemplate guiTemplate) {
+        showGui(player, guiTemplateResolver.resolve(guiTemplate.getTemplate(), guiTemplate.getParams()));
+    }
+
+    public void showChatTemplate(Player player, ChatTemplate chatTemplate) {
+        showChat(player, chatTemplateResolver.resolve(chatTemplate.getTemplate(), chatTemplate.getParams()));
     }
 
     public void showGui(Player player, TubingGui inventory) {
@@ -158,38 +171,12 @@ public class GuiActionService {
         }, 1);
     }
 
-    public void showGuiTemplate(Player player, GuiTemplate guiTemplate) {
-        showGui(player, guiTemplateResolver.resolve(guiTemplate.getTemplate(), guiTemplate.getParams()));
-    }
-
-    private Object[] getMethodParams(Method method, Map<String, String> paramMap, String actionQuery, Player player) {
-        Object[] methodParams = new Object[method.getParameterCount()];
-        Class<?>[] parameterTypes = method.getParameterTypes();
-        Annotation[][] parameterAnnotations = method.getParameterAnnotations();
-        for (int i = 0; i < parameterTypes.length; i++) {
-            Annotation[] annotations = parameterAnnotations[i];
-            Optional<Annotation> paramAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(GuiParam.class)).findFirst();
-            if (paramAnnotation.isPresent()) {
-                GuiParam param = (GuiParam) paramAnnotation.get();
-                if (paramMap.containsKey(param.value())) {
-                    methodParams[i] = toObject(parameterTypes[i], URLDecoder.decode(paramMap.get(param.value())));
-                } else if (StringUtils.isNotBlank(param.defaultValue())) {
-                    methodParams[i] = toObject(parameterTypes[i], param.defaultValue());
-                }
-            } else if (parameterTypes[i] == Player.class) {
-                methodParams[i] = player;
-            } else {
-                Optional<Annotation> currentActionAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(CurrentAction.class)).findFirst();
-                if (currentActionAnnotation.isPresent()) {
-                    methodParams[i] = actionQuery;
-                }
+    public void showChat(Player player, TubingChatGui tubingChatGui) {
+        Bukkit.getScheduler().runTaskLater(TubingPlugin.getPlugin(), () -> {
+            for (String chatLine : tubingChatGui.getChatLines()) {
+                player.sendMessage(chatLine);
             }
-            Optional<Annotation> allParamsAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(GuiParams.class)).findFirst();
-            if (allParamsAnnotation.isPresent()) {
-                methodParams[i] = paramMap;
-            }
-        }
-        return methodParams;
+        }, 1);
     }
 
     private Map<String, Object> getTemplateParams(Method method, Map<String, String> paramMap, String actionQuery, Player player) {
@@ -229,18 +216,6 @@ public class GuiActionService {
         return value;
     }
 
-    private Map<String, String> getParams(String[] split) {
-        Map<String, String> paramMap = new HashMap<>();
-        if (split.length > 1) {
-            String[] queryParams = split[1].split("&");
-            for (String queryParam : queryParams) {
-                String[] paramKeyValue = queryParam.split("=");
-                paramMap.put(paramKeyValue[0], paramKeyValue[1]);
-            }
-        }
-        return paramMap;
-    }
-
     public void loadGuiControllers() {
         Set<Class<?>> typesAnnotatedWith = TubingPlugin.getPlugin().getIocContainer().getReflections().getTypesAnnotatedWith(GuiController.class);
 
@@ -260,4 +235,14 @@ public class GuiActionService {
     public void removeInventory(Player player) {
         inventories.remove(player.getUniqueId());
     }
+
+    private void addTemplateParams(Player player, String actionQuery, Method method, Map<String, String> paramMap, Map<String, Object> params) {
+        Map<String, Object> templateParams = getTemplateParams(method, paramMap, actionQuery, player);
+        templateParams.forEach((k, v) -> {
+            if (!params.containsKey(k)) {
+                params.put(k, v);
+            }
+        });
+    }
+
 }
