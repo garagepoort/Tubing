@@ -89,12 +89,13 @@ public class GuiTemplateResolver {
         for (Element guiItem : guiItems) {
             String leftClickAction = guiItem.attr("onLeftClick");
             String rightClickAction = guiItem.attr("onRightClick");
+            String middleClickAction = guiItem.attr("onMiddleClick");
             int slot = Integer.parseInt(guiItem.attr("slot"));
             String material = guiItem.attr("material");
             String name = guiItem.attr("name");
             boolean enchanted = guiItem.hasAttr("enchanted");
             List<String> loreLines = parseLoreLines(guiItem);
-            builder.addItem(leftClickAction, rightClickAction, slot, itemStack(material, name, loreLines, enchanted));
+            builder.addItem(leftClickAction, rightClickAction, middleClickAction, slot, itemStack(material, name, loreLines, enchanted));
         }
 
         return builder.build();

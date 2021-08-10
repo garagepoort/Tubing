@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 
@@ -24,7 +25,8 @@ public class InventoryClick implements Listener {
             Optional<TubingGui> inventory = actionService.getTubingGui(player);
             inventory.ifPresent(tubingGui -> {
                 if (event.getClickedInventory().equals(tubingGui.getInventory())) {
-                    String action = event.getClick().isLeftClick() ? tubingGui.getLeftActions().get(slot) : tubingGui.getRightActions().get(slot);
+                    String action = getClickAction(event, slot, tubingGui);
+
                     if (StringUtils.isNotBlank(action)) {
                         if (action.equals(TubingGuiActions.NOOP)) {
                             event.setCancelled(true);
@@ -37,6 +39,18 @@ public class InventoryClick implements Listener {
                 }
             });
         }
+    }
+
+    private String getClickAction(InventoryClickEvent event, int slot, TubingGui tubingGui) {
+        String action = null;
+        if (event.getClick().isLeftClick()) {
+            action = tubingGui.getLeftActions().get(slot);
+        } else if (event.getClick().isRightClick()) {
+            action = tubingGui.getRightActions().get(slot);
+        } else if (event.getClick() == ClickType.MIDDLE) {
+            action = tubingGui.getMiddleActions().get(slot);
+        }
+        return action;
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
