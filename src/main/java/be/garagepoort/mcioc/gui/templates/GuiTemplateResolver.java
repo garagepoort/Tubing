@@ -118,12 +118,17 @@ public class GuiTemplateResolver {
         addName(itemStack, name);
         addLore(itemStack, lore);
 
+        ItemMeta meta = itemStack.getItemMeta();
         if (enchanted) {
             itemStack.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 1);
-            ItemMeta meta = itemStack.getItemMeta();
-            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-            itemStack.setItemMeta(meta);
         }
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        meta.addItemFlags(ItemFlag.HIDE_DESTROYS);
+        meta.addItemFlags(ItemFlag.HIDE_PLACED_ON);
+        meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+        meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+        itemStack.setItemMeta(meta);
         return itemStack;
     }
 
