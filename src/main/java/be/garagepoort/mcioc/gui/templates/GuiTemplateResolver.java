@@ -34,6 +34,16 @@ import java.util.stream.Collectors;
 @IocBean
 public class GuiTemplateResolver {
 
+    private static final String IF_ATTR = "if";
+    private static final String ON_LEFT_CLICK_ATTR = "onLeftClick";
+    private static final String ON_RIGHT_CLICK_ATTR = "onRightClick";
+    private static final String ON_MIDDLE_CLICK_ATTR = "onMiddleClick";
+    private static final String SLOT_ATTR = "slot";
+    private static final String MATERIAL_ATTR = "material";
+    private static final String NAME_ATTR = "name";
+    private static final String ENCHANTED_ATTR = "enchanted";
+    private static final String TRUE = "true";
+
     private final Configuration freemarkerConfiguration;
     private final DefaultObjectWrapper defaultObjectWrapper;
 
@@ -87,15 +97,19 @@ public class GuiTemplateResolver {
         TubingGui.Builder builder = new TubingGui.Builder(format(title), size);
         Elements guiItems = tubingGuiElement.select("GuiItem");
         for (Element guiItem : guiItems) {
-            String leftClickAction = guiItem.attr("onLeftClick");
-            String rightClickAction = guiItem.attr("onRightClick");
-            String middleClickAction = guiItem.attr("onMiddleClick");
-            int slot = Integer.parseInt(guiItem.attr("slot"));
-            String material = guiItem.attr("material");
-            String name = guiItem.attr("name");
-            boolean enchanted = guiItem.hasAttr("enchanted");
-            List<String> loreLines = parseLoreLines(guiItem);
-            builder.addItem(leftClickAction, rightClickAction, middleClickAction, slot, itemStack(material, name, loreLines, enchanted));
+            String ifAttr = guiItem.attr(IF_ATTR);
+            if (StringUtils.isBlank(ifAttr) || TRUE.equalsIgnoreCase(ifAttr)) {
+                String leftClickAction = guiItem.attr(ON_LEFT_CLICK_ATTR);
+                String rightClickAction = guiItem.attr(ON_RIGHT_CLICK_ATTR);
+                String middleClickAction = guiItem.attr(ON_MIDDLE_CLICK_ATTR);
+
+                int slot = Integer.parseInt(guiItem.attr(SLOT_ATTR));
+                String material = guiItem.attr(MATERIAL_ATTR);
+                String name = guiItem.attr(NAME_ATTR);
+                boolean enchanted = guiItem.hasAttr(ENCHANTED_ATTR);
+                List<String> loreLines = parseLoreLines(guiItem);
+                builder.addItem(leftClickAction, rightClickAction, middleClickAction, slot, itemStack(material, name, loreLines, enchanted));
+            }
         }
 
         return builder.build();
