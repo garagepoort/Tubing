@@ -156,7 +156,7 @@ public class GuiActionService {
     }
 
     public void showGuiTemplate(Player player, GuiTemplate guiTemplate) {
-        showGui(player, guiTemplateResolver.resolve(guiTemplate.getTemplate(), guiTemplate.getParams()));
+        showGui(player, guiTemplateResolver.resolve(player, guiTemplate.getTemplate(), guiTemplate.getParams()));
     }
 
     public void showChatTemplate(Player player, ChatTemplate chatTemplate) {

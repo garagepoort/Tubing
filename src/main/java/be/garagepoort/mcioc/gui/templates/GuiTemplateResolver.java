@@ -4,6 +4,7 @@ import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.TubingPlugin;
 import be.garagepoort.mcioc.gui.TubingGui;
 import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
+import be.garagepoort.mcioc.permissions.TubingPermissionService;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
@@ -12,24 +13,25 @@ import freemarker.template.TemplateModel;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
+
+import static be.garagepoort.mcioc.ReflectionUtils.getConfigStringValue;
 
 @IocBean
 public class GuiTemplateResolver {
@@ -43,46 +45,39 @@ public class GuiTemplateResolver {
     private static final String NAME_ATTR = "name";
     private static final String ENCHANTED_ATTR = "enchanted";
     private static final String TRUE = "true";
+    private static final String PERMISSION_ATTR = "permission";
+    private static final String CONFIG_PREFIX = "config|";
 
     private final Configuration freemarkerConfiguration;
+    private final TemplateConfigResolver templateConfigResolver;
     private final DefaultObjectWrapper defaultObjectWrapper;
+    private final TubingPermissionService tubingPermissionService;
 
-    public GuiTemplateResolver() {
+    public GuiTemplateResolver(TemplateConfigResolver templateConfigResolver, TubingPermissionService tubingPermissionService) {
+        this.templateConfigResolver = templateConfigResolver;
+        this.tubingPermissionService = tubingPermissionService;
         freemarkerConfiguration = new Configuration(Configuration.VERSION_2_3_28);
         defaultObjectWrapper = new DefaultObjectWrapper(Configuration.VERSION_2_3_28);
         freemarkerConfiguration.setClassForTemplateLoading(TubingPlugin.getPlugin().getClass(), "/");
     }
 
-    public TubingGui resolve(String templatePath) {
-        return resolve(templatePath, new HashMap<>());
-    }
 
-    public TubingGui resolve(String templatePath, Map<String, Object> params) {
+    public TubingGui resolve(Player player, String templatePath, Map<String, Object> params) {
         try {
             Template template = freemarkerConfiguration.getTemplate(templatePath);
             TemplateModel statics = defaultObjectWrapper.getStaticModels();
             StringWriter stringWriter = new StringWriter();
 
-            Map<String, FileConfiguration> fileConfigurations = TubingPlugin.getPlugin().getFileConfigurations();
-            fileConfigurations.forEach((k, v) -> {
-                Set<String> keys = v.getKeys(true);
-                for (String key : keys) {
-                    params.put(k + ":" + key, v.get(key));
-                    if (k.equalsIgnoreCase("config")) {
-                        params.put(key, v.get(key));
-                    }
-                }
-            });
-
             params.put("statics", statics);
+            params.put("$config", templateConfigResolver);
             template.process(params, stringWriter);
-            return parseHtml(stringWriter.toString());
+            return parseHtml(player, stringWriter.toString());
         } catch (IOException | TemplateException e) {
             throw new TubingGuiException("Could not load template: [" + templatePath + "]", e);
         }
     }
 
-    private TubingGui parseHtml(String html) {
+    private TubingGui parseHtml(Player player, String html) {
         Document document = Jsoup.parse(html);
         Element tubingGuiElement = document.selectFirst("TubingGui");
 
@@ -90,24 +85,23 @@ public class GuiTemplateResolver {
             throw new TubingGuiException("Invalid html template. No TubingGui element found");
         }
 
-        int size = StringUtils.isBlank(tubingGuiElement.attr("size")) ? 54 : Integer.parseInt(tubingGuiElement.attr("size"));
+        int size = StringUtils.isBlank(getAttr(tubingGuiElement, "size")) ? 54 : Integer.parseInt(getAttr(tubingGuiElement, "size"));
         Element titleElement = tubingGuiElement.selectFirst("title");
         String title = titleElement == null ? "" : titleElement.text();
 
         TubingGui.Builder builder = new TubingGui.Builder(format(title), size);
         Elements guiItems = tubingGuiElement.select("GuiItem");
         for (Element guiItem : guiItems) {
-            String ifAttr = guiItem.attr(IF_ATTR);
-            if (StringUtils.isBlank(ifAttr) || TRUE.equalsIgnoreCase(ifAttr)) {
-                String leftClickAction = guiItem.attr(ON_LEFT_CLICK_ATTR);
-                String rightClickAction = guiItem.attr(ON_RIGHT_CLICK_ATTR);
-                String middleClickAction = guiItem.attr(ON_MIDDLE_CLICK_ATTR);
+            if (validateShowElement(guiItem, player)) {
+                String leftClickAction = getAttr(guiItem, ON_LEFT_CLICK_ATTR);
+                String rightClickAction = getAttr(guiItem, ON_RIGHT_CLICK_ATTR);
+                String middleClickAction = getAttr(guiItem, ON_MIDDLE_CLICK_ATTR);
 
-                int slot = Integer.parseInt(guiItem.attr(SLOT_ATTR));
-                String material = guiItem.attr(MATERIAL_ATTR);
-                String name = guiItem.attr(NAME_ATTR);
+                int slot = Integer.parseInt(getAttr(guiItem, SLOT_ATTR));
+                String material = getAttr(guiItem, MATERIAL_ATTR);
+                String name = getAttr(guiItem, NAME_ATTR);
                 boolean enchanted = guiItem.hasAttr(ENCHANTED_ATTR);
-                List<String> loreLines = parseLoreLines(guiItem);
+                List<String> loreLines = parseLoreLines(player, guiItem);
                 builder.addItem(leftClickAction, rightClickAction, middleClickAction, slot, itemStack(material, name, loreLines, enchanted));
             }
         }
@@ -115,14 +109,41 @@ public class GuiTemplateResolver {
         return builder.build();
     }
 
-    private List<String> parseLoreLines(Element guiItem) {
+    private List<String> parseLoreLines(Player player, Element guiItem) {
         Element loreElement = guiItem.selectFirst("Lore");
         List<String> loreLines = new ArrayList<>();
         if (loreElement != null) {
-            Elements loreLinesElements = loreElement.select("LoreLine");
-            loreLines = loreLinesElements.stream().map(Element::text).collect(Collectors.toList());
+            if (validateShowElement(loreElement, player)) {
+                List<Element> loreLinesElements = loreElement.select("LoreLine").stream()
+                        .filter(g -> validateShowElement(g, player))
+                        .collect(Collectors.toList());
+
+                loreLines = loreLinesElements.stream().map(Element::text).collect(Collectors.toList());
+            }
         }
         return loreLines;
+    }
+
+    private String getAttr(Node node, String attribute) {
+        String originalAttr = node.attr(attribute);
+        if (StringUtils.isNotBlank(originalAttr) && originalAttr.startsWith(CONFIG_PREFIX)) {
+            String configProperty = originalAttr.replace(CONFIG_PREFIX, "");
+            return getConfigStringValue(configProperty, TubingPlugin.getPlugin().getFileConfigurations())
+                    .orElseThrow(() -> new TubingGuiException("Unknown property defined in permission attribute: [" + configProperty + "]"));
+        }
+        return originalAttr;
+    }
+
+    private boolean validateShowElement(Element guiItem, Player player) {
+        return ifCheck(getAttr(guiItem, IF_ATTR)) && permissionCheck(player, getAttr(guiItem, PERMISSION_ATTR));
+    }
+
+    private boolean ifCheck(String attr) {
+        return StringUtils.isBlank(attr) || TRUE.equalsIgnoreCase(attr);
+    }
+
+    private boolean permissionCheck(Player player, String attr) {
+        return StringUtils.isBlank(attr) || tubingPermissionService.hasPermission(player, attr);
     }
 
     private ItemStack itemStack(String material, String name, List<String> lore, boolean enchanted) {

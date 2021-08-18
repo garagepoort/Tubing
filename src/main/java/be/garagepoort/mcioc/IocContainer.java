@@ -58,6 +58,7 @@ public class IocContainer {
             Set<Class<?>> configurationClasses = reflections.getTypesAnnotatedWith(TubingConfiguration.class);
             List<Method> providers = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocBeanProvider.class).stream()).collect(Collectors.toList());
             List<Method> multiProviders = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocMultiProvider.class).stream()).collect(Collectors.toList());
+
             List<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
                     .filter(a -> iocConditionalPropertyFilter.isValidBean(a, configs))
                     .filter(iocConditionalFilter::isValidBean)
@@ -179,14 +180,30 @@ public class IocContainer {
             }
 
             // Find only implementation of interface and instantiate
-            Set<Class<?>> subTypesOf = reflections.getSubTypesOf((Class<Object>) aClass).stream().filter(validBeans::contains).collect(Collectors.toSet());
-            if (subTypesOf.isEmpty()) {
+            Set<Class<?>> subTypes = reflections.getSubTypesOf((Class<Object>) aClass).stream()
+                    .filter(validBeans::contains)
+                    .collect(Collectors.toSet());
+
+            Set<Class<?>> subtypeNonConditional = subTypes.stream()
+                    .filter(a -> !a.isAnnotationPresent(ConditionalOnMissingBean.class))
+                    .collect(Collectors.toSet());
+
+            Set<Class<?>> subtypesOnMissing = subTypes.stream()
+                    .filter(a -> a.isAnnotationPresent(ConditionalOnMissingBean.class))
+                    .collect(Collectors.toSet());
+
+            if (subTypes.isEmpty()) {
                 throw new IocException("Cannot instantiate bean with interface " + aClass.getName() + ". No classes implementing this interface");
             }
-            if (subTypesOf.size() > 1) {
+            if (subtypeNonConditional.size() > 1) {
                 throw new IocException("Multiple beans found with interface " + aClass.getName() + ". At most one bean should be defined. Use @IocMultiProvider for supporting multiple beans with one interface");
             }
-            return createBean(reflections, subTypesOf.iterator().next(), validBeans, providedBeans, multiProviders);
+            if (subtypeNonConditional.isEmpty() && subtypesOnMissing.size() > 1) {
+                throw new IocException("Multiple beans found with interface " + aClass.getName() + ". At most one bean should be defined. To many beans seems to be annotated with @ConditionalOnMissingBean");
+            }
+
+            Class<?> beanToCreate = subtypeNonConditional.isEmpty() ? subtypesOnMissing.iterator().next() : subtypeNonConditional.iterator().next();
+            return createBean(reflections, beanToCreate, validBeans, providedBeans, multiProviders);
         }
         return createBean(reflections, aClass, validBeans, providedBeans, multiProviders);
     }
