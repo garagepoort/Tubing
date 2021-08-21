@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 public class DefaultTubingPermissionService implements TubingPermissionService {
 
     @Override
-    public boolean hasPermission(Player player, String permission) {
+    public boolean has(Player player, String permission) {
         return player.hasPermission(permission);
     }
 

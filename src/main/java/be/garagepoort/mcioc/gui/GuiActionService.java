@@ -3,7 +3,8 @@ package be.garagepoort.mcioc.gui;
 import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
-import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.common.ITubingBukkitUtil;
+import be.garagepoort.mcioc.common.TubingPluginProvider;
 import be.garagepoort.mcioc.gui.actionquery.ActionQueryParser;
 import be.garagepoort.mcioc.gui.exceptions.GuiExceptionHandler;
 import be.garagepoort.mcioc.gui.templates.ChatTemplate;
@@ -11,7 +12,6 @@ import be.garagepoort.mcioc.gui.templates.ChatTemplateResolver;
 import be.garagepoort.mcioc.gui.templates.GuiTemplate;
 import be.garagepoort.mcioc.gui.templates.GuiTemplateResolver;
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.lang.annotation.Annotation;
@@ -29,17 +29,22 @@ import java.util.regex.Pattern;
 
 @IocBean
 public class GuiActionService {
-    private final GuiTemplateResolver guiTemplateResolver;
-    private final ChatTemplateResolver chatTemplateResolver;
-    private final ActionQueryParser actionQueryParser;
     private final Map<String, Method> guiActions = new HashMap<>();
     private final Map<UUID, TubingGui> inventories = new HashMap<>();
     private final Map<Class<? extends Exception>, GuiExceptionHandler> exceptionHandlers = new HashMap<>();
 
-    public GuiActionService(GuiTemplateResolver guiTemplateResolver, ChatTemplateResolver chatTemplateResolver, ActionQueryParser actionQueryParser) {
+    private final TubingPluginProvider tubingPluginProvider;
+    private final GuiTemplateResolver guiTemplateResolver;
+    private final ChatTemplateResolver chatTemplateResolver;
+    private final ActionQueryParser actionQueryParser;
+    private final ITubingBukkitUtil tubingBukkitUtil;
+
+    public GuiActionService(TubingPluginProvider tubingPluginProvider, GuiTemplateResolver guiTemplateResolver, ChatTemplateResolver chatTemplateResolver, ActionQueryParser actionQueryParser, ITubingBukkitUtil tubingBukkitUtil) {
+        this.tubingPluginProvider = tubingPluginProvider;
         this.guiTemplateResolver = guiTemplateResolver;
         this.chatTemplateResolver = chatTemplateResolver;
         this.actionQueryParser = actionQueryParser;
+        this.tubingBukkitUtil = tubingBukkitUtil;
     }
 
     public void setInventory(Player player, TubingGui tubingGui) {
@@ -67,7 +72,7 @@ public class GuiActionService {
             Map<String, String> paramMap = actionQueryParser.getParams(actionQuery);
             Object[] methodParams = actionQueryParser.getMethodParams(method, actionQuery, player);
 
-            Object bean = TubingPlugin.getPlugin().getIocContainer().get(method.getDeclaringClass());
+            Object bean = tubingPluginProvider.getPlugin().getIocContainer().get(method.getDeclaringClass());
             if (bean == null) {
                 throw new IocException("No GuiController found to handle action [" + actionQuery + "]. Tried finding [" + method.getClass() + "]");
             }
@@ -89,11 +94,11 @@ public class GuiActionService {
     }
 
     private void processAsyncGuiAction(Player player, String actionQuery, Method method, Map<String, String> paramMap, AsyncGui invokedReturnedObject) {
-        Bukkit.getScheduler().runTaskAsynchronously(TubingPlugin.getPlugin(), () -> {
+        tubingBukkitUtil.runAsync(() -> {
             try {
                 AsyncGui asyncGui = invokedReturnedObject;
                 Object run = asyncGui.getAsyncGuiExecutor().run();
-                Bukkit.getScheduler().runTaskLater(TubingPlugin.getPlugin(), () -> processGuiAction(player, actionQuery, method, paramMap, run), 1);
+                tubingBukkitUtil.runTaskLater(() -> processGuiAction(player, actionQuery, method, paramMap, run), 1);
             } catch (Throwable e) {
                 try {
                     handleException(player, e);
@@ -164,7 +169,7 @@ public class GuiActionService {
     }
 
     public void showGui(Player player, TubingGui inventory) {
-        Bukkit.getScheduler().runTaskLater(TubingPlugin.getPlugin(), () -> {
+        tubingBukkitUtil.runTaskLater(() -> {
             player.closeInventory();
             player.openInventory(inventory.getInventory());
             setInventory(player, inventory);
@@ -172,7 +177,7 @@ public class GuiActionService {
     }
 
     public void showChat(Player player, TubingChatGui tubingChatGui) {
-        Bukkit.getScheduler().runTaskLater(TubingPlugin.getPlugin(), () -> {
+        tubingBukkitUtil.runTaskLater(() -> {
             for (String chatLine : tubingChatGui.getChatLines()) {
                 player.sendMessage(chatLine);
             }
@@ -217,18 +222,19 @@ public class GuiActionService {
     }
 
     public void loadGuiControllers() {
-        Set<Class<?>> typesAnnotatedWith = TubingPlugin.getPlugin().getIocContainer().getReflections().getTypesAnnotatedWith(GuiController.class);
+        Set<Class<?>> typesAnnotatedWith = tubingPluginProvider.getPlugin().getIocContainer().getReflections().getTypesAnnotatedWith(GuiController.class);
+        typesAnnotatedWith.forEach(this::loadGuiController);
+    }
 
-        for (Class<?> aClass : typesAnnotatedWith) {
-            List<Method> actionMethods = ReflectionUtils.getMethodsAnnotatedWith(aClass, GuiAction.class);
-            for (Method actionMethod : actionMethods) {
-                GuiAction annotation = actionMethod.getAnnotation(GuiAction.class);
-                String value = annotation.value();
-                if (guiActions.containsKey(value)) {
-                    throw new IocException("Duplicate GUI action defined: [" + value + "]");
-                }
-                guiActions.put(value, actionMethod);
+    public void loadGuiController(Class guiController) {
+        List<Method> actionMethods = ReflectionUtils.getMethodsAnnotatedWith(guiController, GuiAction.class);
+        for (Method actionMethod : actionMethods) {
+            GuiAction annotation = actionMethod.getAnnotation(GuiAction.class);
+            String value = annotation.value();
+            if (guiActions.containsKey(value)) {
+                throw new IocException("Duplicate GUI action defined: [" + value + "]");
             }
+            guiActions.put(value, actionMethod);
         }
     }
 

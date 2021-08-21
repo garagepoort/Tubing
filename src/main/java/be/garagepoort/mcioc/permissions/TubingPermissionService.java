@@ -4,5 +4,5 @@ import org.bukkit.entity.Player;
 
 public interface TubingPermissionService {
 
-    boolean hasPermission(Player player, String permission);
+    boolean has(Player player, String permission);
 }

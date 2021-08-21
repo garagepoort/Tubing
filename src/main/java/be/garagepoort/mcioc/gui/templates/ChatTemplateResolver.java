@@ -1,7 +1,7 @@
 package be.garagepoort.mcioc.gui.templates;
 
 import be.garagepoort.mcioc.IocBean;
-import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.common.TubingPluginProvider;
 import be.garagepoort.mcioc.gui.TubingChatGui;
 import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
 import freemarker.template.Configuration;
@@ -25,13 +25,15 @@ import java.util.Set;
 @IocBean
 public class ChatTemplateResolver {
 
+    private final TubingPluginProvider tubingPluginProvider;
     private final Configuration freemarkerConfiguration;
     private final DefaultObjectWrapper defaultObjectWrapper;
 
-    public ChatTemplateResolver() {
+    public ChatTemplateResolver(TubingPluginProvider tubingPluginProvider) {
+        this.tubingPluginProvider = tubingPluginProvider;
         freemarkerConfiguration = new Configuration(Configuration.VERSION_2_3_28);
         defaultObjectWrapper = new DefaultObjectWrapper(Configuration.VERSION_2_3_28);
-        freemarkerConfiguration.setClassForTemplateLoading(TubingPlugin.getPlugin().getClass(), "/");
+        freemarkerConfiguration.setClassForTemplateLoading(this.tubingPluginProvider.getPlugin().getClass(), "/");
     }
 
     public TubingChatGui resolve(String templatePath) {
@@ -44,7 +46,7 @@ public class ChatTemplateResolver {
             TemplateModel statics = defaultObjectWrapper.getStaticModels();
             StringWriter stringWriter = new StringWriter();
 
-            Map<String, FileConfiguration> fileConfigurations = TubingPlugin.getPlugin().getFileConfigurations();
+            Map<String, FileConfiguration> fileConfigurations = tubingPluginProvider.getPlugin().getFileConfigurations();
             fileConfigurations.forEach((k, v) -> {
                 Set<String> keys = v.getKeys(true);
                 for (String key : keys) {
