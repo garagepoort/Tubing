@@ -1,7 +1,6 @@
 package be.garagepoort.mcioc.gui.templates.xml;
 
 import be.garagepoort.mcioc.IocBean;
-import be.garagepoort.mcioc.common.TubingPluginProvider;
 import be.garagepoort.mcioc.gui.TubingGui;
 import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
 import be.garagepoort.mcioc.permissions.TubingPermissionService;
@@ -16,14 +15,11 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static be.garagepoort.mcioc.ReflectionUtils.getConfigStringValue;
 
 @IocBean
 public class TubingGuiXmlParser {
@@ -37,13 +33,10 @@ public class TubingGuiXmlParser {
     private static final String ENCHANTED_ATTR = "enchanted";
     private static final String TRUE = "true";
     private static final String PERMISSION_ATTR = "permission";
-    private static final String CONFIG_PREFIX = "config|";
 
-    private final TubingPluginProvider tubingPluginProvider;
     private final TubingPermissionService tubingPermissionService;
 
-    public TubingGuiXmlParser(TubingPluginProvider tubingPluginProvider, TubingPermissionService tubingPermissionService) {
-        this.tubingPluginProvider = tubingPluginProvider;
+    public TubingGuiXmlParser(TubingPermissionService tubingPermissionService) {
         this.tubingPermissionService = tubingPermissionService;
     }
 
@@ -55,7 +48,7 @@ public class TubingGuiXmlParser {
             throw new TubingGuiException("Invalid html template. No TubingGui element found");
         }
 
-        int size = StringUtils.isBlank(getAttr(tubingGuiElement, "size")) ? 54 : Integer.parseInt(getAttr(tubingGuiElement, "size"));
+        int size = StringUtils.isBlank(tubingGuiElement.attr("size")) ? 54 : Integer.parseInt(tubingGuiElement.attr("size"));
         Element titleElement = tubingGuiElement.selectFirst("title");
         String title = titleElement == null ? "" : titleElement.text();
 
@@ -63,13 +56,13 @@ public class TubingGuiXmlParser {
         Elements guiItems = tubingGuiElement.select("GuiItem");
         for (Element guiItem : guiItems) {
             if (validateShowElement(guiItem, player)) {
-                String leftClickAction = getAttr(guiItem, ON_LEFT_CLICK_ATTR);
-                String rightClickAction = getAttr(guiItem, ON_RIGHT_CLICK_ATTR);
-                String middleClickAction = getAttr(guiItem, ON_MIDDLE_CLICK_ATTR);
+                String leftClickAction = guiItem.attr(ON_LEFT_CLICK_ATTR);
+                String rightClickAction = guiItem.attr(ON_RIGHT_CLICK_ATTR);
+                String middleClickAction = guiItem.attr(ON_MIDDLE_CLICK_ATTR);
 
-                int slot = Integer.parseInt(getAttr(guiItem, SLOT_ATTR));
-                String material = getAttr(guiItem, MATERIAL_ATTR);
-                String name = getAttr(guiItem, NAME_ATTR);
+                int slot = Integer.parseInt(guiItem.attr(SLOT_ATTR));
+                String material = guiItem.attr(MATERIAL_ATTR);
+                String name = guiItem.attr(NAME_ATTR);
                 boolean enchanted = guiItem.hasAttr(ENCHANTED_ATTR);
                 List<String> loreLines = parseLoreLines(player, guiItem);
                 builder.addItem(leftClickAction, rightClickAction, middleClickAction, slot, itemStack(material, name, loreLines, enchanted));
@@ -94,18 +87,8 @@ public class TubingGuiXmlParser {
         return loreLines;
     }
 
-    private String getAttr(Node node, String attribute) {
-        String originalAttr = node.attr(attribute);
-        if (StringUtils.isNotBlank(originalAttr) && originalAttr.startsWith(CONFIG_PREFIX)) {
-            String configProperty = originalAttr.replace(CONFIG_PREFIX, "");
-            return getConfigStringValue(configProperty, tubingPluginProvider.getPlugin().getFileConfigurations())
-                    .orElseThrow(() -> new TubingGuiException("Unknown property defined in permission attribute: [" + configProperty + "]"));
-        }
-        return originalAttr;
-    }
-
     private boolean validateShowElement(Element guiItem, Player player) {
-        return ifCheck(getAttr(guiItem, IF_ATTR)) && permissionCheck(player, getAttr(guiItem, PERMISSION_ATTR));
+        return ifCheck(guiItem.attr(IF_ATTR)) && permissionCheck(player, guiItem.attr(PERMISSION_ATTR));
     }
 
     private boolean ifCheck(String attr) {

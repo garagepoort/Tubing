@@ -1,0 +1,46 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="https://staffplusplus.org"
+            xmlns="https://staffplusplus.org/schemas/tubing/tubinggui.xsd"
+            elementFormDefault="qualified">
+    <xsd:element name="TubingGui">
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element type="xsd:string" name="title"/>
+                <xsd:element name="GuiItem" maxOccurs="unbounded" minOccurs="0">
+                    <xsd:complexType mixed="true">
+                        <xsd:sequence>
+                            <xsd:element name="Lore" minOccurs="0">
+                                <xsd:complexType>
+                                    <xsd:sequence>
+                                        <xsd:element name="LoreLine" maxOccurs="unbounded" minOccurs="0">
+                                            <xsd:complexType>
+                                                <xsd:simpleContent>
+                                                    <xsd:extension base="xsd:string">
+                                                        <xsd:attribute type="xsd:string" name="if" use="optional"/>
+                                                        <xsd:attribute type="xsd:string" name="permission"
+                                                                       use="optional"/>
+                                                    </xsd:extension>
+                                                </xsd:simpleContent>
+                                            </xsd:complexType>
+                                        </xsd:element>
+                                    </xsd:sequence>
+                                    <xsd:attribute type="xsd:string" name="permission" use="optional"/>
+                                    <xsd:attribute type="xsd:string" name="if" use="optional"/>
+                                </xsd:complexType>
+                            </xsd:element>
+                        </xsd:sequence>
+                        <xsd:attribute type="xsd:byte" name="slot" use="required"/>
+                        <xsd:attribute type="xsd:string" name="material" use="required"/>
+                        <xsd:attribute type="xsd:string" name="name" use="required"/>
+                        <xsd:attribute type="xsd:string" name="if" use="optional"/>
+                        <xsd:attribute type="xsd:string" name="permission" use="optional"/>
+                        <xsd:attribute type="xsd:string" name="onLeftClick" use="optional"/>
+                        <xsd:attribute type="xsd:string" name="onRightClick" use="optional"/>
+                        <xsd:attribute type="xsd:string" name="onMiddleClick" use="optional"/>
+                    </xsd:complexType>
+                </xsd:element>
+            </xsd:sequence>
+            <xsd:attribute type="xsd:byte" name="size" use="required"/>
+        </xsd:complexType>
+    </xsd:element>
+</xsd:schema>

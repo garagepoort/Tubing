@@ -26,12 +26,14 @@ public class GuiTemplateResolver {
     private final DefaultObjectWrapper defaultObjectWrapper;
     private final TubingPermissionService tubingPermissionService;
     private final TubingGuiXmlParser tubingGuiXmlParser;
+    private final TubingGuiTemplateParser tubingGuiTemplateParser;
 
-    public GuiTemplateResolver(TubingPluginProvider tubingPluginProvider, TemplateConfigResolver templateConfigResolver, TubingPermissionService tubingPermissionService, TubingGuiXmlParser tubingGuiXmlParser) {
+    public GuiTemplateResolver(TubingPluginProvider tubingPluginProvider, TemplateConfigResolver templateConfigResolver, TubingPermissionService tubingPermissionService, TubingGuiXmlParser tubingGuiXmlParser, TubingGuiTemplateParser tubingGuiTemplateParser) {
         this.tubingPluginProvider = tubingPluginProvider;
         this.templateConfigResolver = templateConfigResolver;
         this.tubingPermissionService = tubingPermissionService;
         this.tubingGuiXmlParser = tubingGuiXmlParser;
+        this.tubingGuiTemplateParser = tubingGuiTemplateParser;
         freemarkerConfiguration = new Configuration(Configuration.VERSION_2_3_28);
         defaultObjectWrapper = new DefaultObjectWrapper(Configuration.VERSION_2_3_28);
         freemarkerConfiguration.setClassForTemplateLoading(GuiTemplateResolver.this.tubingPluginProvider.getPlugin().getClass(), "/");
@@ -48,7 +50,9 @@ public class GuiTemplateResolver {
             params.put("$config", templateConfigResolver);
             params.put("$permissions", tubingPermissionService);
             template.process(params, stringWriter);
-            return tubingGuiXmlParser.parseHtml(player, stringWriter.toString());
+            String templateHtml = stringWriter.toString();
+            templateHtml = tubingGuiTemplateParser.parseHtml(templateHtml);
+            return tubingGuiXmlParser.parseHtml(player, templateHtml);
         } catch (IOException | TemplateException e) {
             throw new TubingGuiException("Could not load template: [" + templatePath + "]", e);
         }
