@@ -58,7 +58,7 @@ public class ActionQueryParser {
             String[] queryParams = split[1].split("&");
             for (String queryParam : queryParams) {
                 String[] paramKeyValue = queryParam.split("=");
-                paramMap.put(paramKeyValue[0], paramKeyValue[1]);
+                paramMap.put(paramKeyValue[0], URLDecoder.decode(paramKeyValue[1]));
             }
         }
         return paramMap;
