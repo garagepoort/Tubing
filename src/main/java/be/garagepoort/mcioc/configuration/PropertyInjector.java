@@ -17,7 +17,7 @@ public class PropertyInjector {
 
     private static void setProperties(Map<String, FileConfiguration> configs, Object o) {
         try {
-            for (Field f : o.getClass().getDeclaredFields()) {
+            for (Field f : getAllFields(new LinkedList<>(), o.getClass())) {
                 if (!f.isAnnotationPresent(ConfigProperty.class)) {
                     continue;
                 }
@@ -43,6 +43,17 @@ public class PropertyInjector {
         } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
             throw new IocException("Cannot inject property. Make sure the field is public", e);
         }
+    }
+
+
+    private static List<Field> getAllFields(List<Field> fields, Class<?> type) {
+        fields.addAll(Arrays.asList(type.getDeclaredFields()));
+
+        if (type.getSuperclass() != null) {
+            getAllFields(fields, type.getSuperclass());
+        }
+
+        return fields;
     }
 
     public static Enum getInstance(final String value, final Class enumClass) {
