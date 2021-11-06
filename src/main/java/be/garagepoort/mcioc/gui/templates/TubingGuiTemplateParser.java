@@ -6,6 +6,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.jsoup.select.Elements;
 
 import java.util.List;
@@ -21,7 +22,8 @@ public class TubingGuiTemplateParser {
     }
 
     public String parseHtml(String html) {
-        Document document = Jsoup.parse(html);
+        Document document = Jsoup.parse(html, "", Parser.xmlParser());
+        document.outputSettings().indentAmount(0).prettyPrint(false);
         Element tubingGuiElement = document.selectFirst("TubingGui");
 
         if (tubingGuiElement == null) {
@@ -37,7 +39,7 @@ public class TubingGuiTemplateParser {
             parseLoreLines(guiItem);
         }
 
-        return tubingGuiElement.toString();
+        return document.toString();
     }
 
     private void parseLoreLines(Element guiItem) {

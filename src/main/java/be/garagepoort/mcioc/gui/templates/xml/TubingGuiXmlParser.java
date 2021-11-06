@@ -1,7 +1,9 @@
 package be.garagepoort.mcioc.gui.templates.xml;
 
 import be.garagepoort.mcioc.IocBean;
+import be.garagepoort.mcioc.TubingPlugin;
 import be.garagepoort.mcioc.gui.TubingGui;
+import be.garagepoort.mcioc.gui.TubingGuiItem;
 import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
 import be.garagepoort.mcioc.permissions.TubingPermissionService;
 import org.apache.commons.lang.StringUtils;
@@ -24,10 +26,13 @@ import java.util.stream.Collectors;
 @IocBean
 public class TubingGuiXmlParser {
     private static final String IF_ATTR = "if";
+    private static final String TEXT_TAG = "t";
     private static final String ON_LEFT_CLICK_ATTR = "onLeftClick";
     private static final String ON_RIGHT_CLICK_ATTR = "onRightClick";
     private static final String ON_MIDDLE_CLICK_ATTR = "onMiddleClick";
+    private static final String COLOR_ATTR = "color";
     private static final String SLOT_ATTR = "slot";
+    private static final String ID_ATTR = "id";
     private static final String MATERIAL_ATTR = "material";
     private static final String NAME_ATTR = "name";
     private static final String ENCHANTED_ATTR = "enchanted";
@@ -41,6 +46,9 @@ public class TubingGuiXmlParser {
     }
 
     public TubingGui parseHtml(Player player, String html) {
+        TubingPlugin.getPlugin().getLogger().info("Parsing: ");
+        TubingPlugin.getPlugin().getLogger().info(html);
+
         Document document = Jsoup.parse(html);
         Element tubingGuiElement = document.selectFirst("TubingGui");
 
@@ -50,22 +58,32 @@ public class TubingGuiXmlParser {
 
         int size = StringUtils.isBlank(tubingGuiElement.attr("size")) ? 54 : Integer.parseInt(tubingGuiElement.attr("size"));
         Element titleElement = tubingGuiElement.selectFirst("title");
+        Element idElement = tubingGuiElement.selectFirst("id");
         String title = titleElement == null ? "" : titleElement.text();
+        String guiId = idElement == null ? null : idElement.text();
 
-        TubingGui.Builder builder = new TubingGui.Builder(format(title), size);
+        TubingGui.Builder builder = new TubingGui.Builder(format(title), size, guiId);
         Elements guiItems = tubingGuiElement.select("GuiItem");
         for (Element guiItem : guiItems) {
             if (validateShowElement(guiItem, player)) {
                 String leftClickAction = guiItem.attr(ON_LEFT_CLICK_ATTR);
                 String rightClickAction = guiItem.attr(ON_RIGHT_CLICK_ATTR);
                 String middleClickAction = guiItem.attr(ON_MIDDLE_CLICK_ATTR);
+                String id = guiItem.attr(ID_ATTR);
 
                 int slot = Integer.parseInt(guiItem.attr(SLOT_ATTR));
                 String material = guiItem.attr(MATERIAL_ATTR);
                 String name = guiItem.attr(NAME_ATTR);
                 boolean enchanted = guiItem.hasAttr(ENCHANTED_ATTR);
                 List<String> loreLines = parseLoreLines(player, guiItem);
-                builder.addItem(leftClickAction, rightClickAction, middleClickAction, slot, itemStack(material, name, loreLines, enchanted));
+
+                TubingGuiItem tubingGuiItem = new TubingGuiItem.Builder(id, slot)
+                        .withLeftClickAction(leftClickAction)
+                        .withRightClickAction(rightClickAction)
+                        .withMiddleClickAction(middleClickAction)
+                        .withItemStack(itemStack(material, name, loreLines, enchanted))
+                        .build();
+                builder.addItem(tubingGuiItem);
             }
         }
 
@@ -81,10 +99,25 @@ public class TubingGuiXmlParser {
                         .filter(g -> validateShowElement(g, player))
                         .collect(Collectors.toList());
 
-                loreLines = loreLinesElements.stream().map(Element::text).collect(Collectors.toList());
+                loreLines = loreLinesElements.stream().map(this::parseLoreLine).collect(Collectors.toList());
             }
         }
         return loreLines;
+    }
+
+    private String parseLoreLine(Element loreLine) {
+        if (loreLine.select(TEXT_TAG).isEmpty()) {
+            return loreLine.text();
+        }
+
+        StringBuilder result = new StringBuilder();
+        for (Element textElement : loreLine.select(TEXT_TAG)) {
+            if (textElement.hasAttr(COLOR_ATTR)) {
+                result.append(textElement.attr(COLOR_ATTR));
+            }
+            result.append(textElement.wholeText());
+        }
+        return result.toString();
     }
 
     private boolean validateShowElement(Element guiItem, Player player) {

@@ -52,7 +52,9 @@ public class GuiTemplateResolver {
             template.process(params, stringWriter);
             String templateHtml = stringWriter.toString();
             templateHtml = tubingGuiTemplateParser.parseHtml(templateHtml);
-            return tubingGuiXmlParser.parseHtml(player, templateHtml);
+            TubingGui tubingGui = tubingGuiXmlParser.parseHtml(player, templateHtml);
+
+            return tubingGui;
         } catch (IOException | TemplateException e) {
             throw new TubingGuiException("Could not load template: [" + templatePath + "]", e);
         }

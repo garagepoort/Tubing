@@ -2,13 +2,17 @@ package be.garagepoort.mcioc.configuration;
 
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
-import org.bukkit.Bukkit;
+import be.garagepoort.mcioc.TubingPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class PropertyInjector {
     public static void injectConfigurationProperties(Object bean, Map<String, FileConfiguration> configs) {
@@ -24,7 +28,7 @@ public class PropertyInjector {
                 ConfigProperty annotation = f.getAnnotation(ConfigProperty.class);
                 Optional<Object> configValue = ReflectionUtils.getConfigValue(annotation.value(), configs);
                 if (!configValue.isPresent()) {
-                    Bukkit.getLogger().warning("[Tubing] >> No property found for config: " + annotation.value());
+                    TubingPlugin.getPlugin().getLogger().warning("[Tubing] >> No property found for config: " + annotation.value());
                     continue;
                 }
                 if (f.isAnnotationPresent(ConfigTransformer.class)) {
