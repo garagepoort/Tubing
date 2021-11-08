@@ -1,6 +1,6 @@
 package be.garagepoort.mcioc.gui.templates.xml;
 
-import be.garagepoort.mcioc.gui.TubingGui;
+import be.garagepoort.mcioc.gui.model.TubingGui;
 import be.garagepoort.mcioc.permissions.TubingPermissionService;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;

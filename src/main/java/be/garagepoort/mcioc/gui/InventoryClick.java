@@ -2,6 +2,8 @@ package be.garagepoort.mcioc.gui;
 
 
 import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.gui.model.TubingGui;
+import be.garagepoort.mcioc.gui.model.TubingGuiActions;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

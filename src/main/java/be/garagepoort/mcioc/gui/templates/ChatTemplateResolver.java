@@ -2,7 +2,7 @@ package be.garagepoort.mcioc.gui.templates;
 
 import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.common.TubingPluginProvider;
-import be.garagepoort.mcioc.gui.TubingChatGui;
+import be.garagepoort.mcioc.gui.model.TubingChatGui;
 import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;

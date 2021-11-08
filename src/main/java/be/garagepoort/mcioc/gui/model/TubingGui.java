@@ -1,4 +1,4 @@
-package be.garagepoort.mcioc.gui;
+package be.garagepoort.mcioc.gui.model;
 
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.Inventory;
@@ -8,32 +8,47 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class TubingGui {
 
     private final String id;
-    private final Inventory inventory;
+    private boolean build;
+    private String title;
+    private int size;
+    private Inventory inventory;
     private final Map<Integer, TubingGuiItem> guiItems = new HashMap<>();
 
-    public TubingGui(Inventory inventory, List<TubingGuiItem> guiItems, String id) {
-        this.inventory = inventory;
+    public TubingGui(List<TubingGuiItem> guiItems, String id, String title, int size) {
         this.id = id;
+        this.size = size;
+        this.title = title;
         for (TubingGuiItem guiItem : guiItems) {
-            addItem(guiItem);
+            this.guiItems.put(guiItem.getSlot(), guiItem);
         }
     }
 
+    public void build() {
+        this.inventory = Bukkit.createInventory(null, size, title);
+        for (TubingGuiItem guiItem : guiItems.values()) {
+            inventory.setItem(guiItem.getSlot(), guiItem.getTubingGuiItemStack().toItemStack());
+        }
+        this.build = true;
+    }
+
+    public Map<Integer, TubingGuiItem> getGuiItems() {
+        return guiItems;
+    }
+
     public Inventory getInventory() {
+        if (!build) {
+            build();
+        }
         return inventory;
     }
 
-    public void addItem(TubingGuiItem tubingGuiItem) {
-        this.guiItems.put(tubingGuiItem.getSlot(), tubingGuiItem);
-        inventory.setItem(tubingGuiItem.getSlot(), tubingGuiItem.getItemStack());
-    }
-
     public String getId() {
-        return id;
+        return id + "_inventory";
     }
 
     public Map<Integer, String> getLeftActions() {
@@ -60,17 +75,24 @@ public class TubingGui {
         return actions;
     }
 
+    public void setSize(int size) {
+        this.size = size;
+    }
+
     public static class Builder {
-        protected final Inventory inventory;
         private String id;
-        private List<TubingGuiItem> guiItems = new ArrayList<>();
+        private final String title;
+        private final int size;
+        private final List<TubingGuiItem> guiItems = new ArrayList<>();
 
         public Builder(String title, int size) {
-            this.inventory = Bukkit.createInventory(null, size, title);
+            this.title = title;
+            this.size = size;
         }
 
         public Builder(String title, int size, String guiId) {
-            this.inventory = Bukkit.createInventory(null, size, title);
+            this.title = title;
+            this.size = size;
             this.id = guiId;
         }
 
@@ -90,7 +112,7 @@ public class TubingGui {
                     .withMiddleClickAction(middleClickAction)
                     .withLeftClickAction(leftClickAction)
                     .withRightClickAction(rightClickAction)
-                    .withItemStack(itemStack)
+                    .withItemStack(mapToTubingItemStack(itemStack))
                     .build());
             return this;
         }
@@ -100,7 +122,7 @@ public class TubingGui {
             this.guiItems.add(new TubingGuiItem.Builder(null, slot)
                     .withLeftClickAction(leftClickAction)
                     .withRightClickAction(rightClickAction)
-                    .withItemStack(itemStack)
+                    .withItemStack(mapToTubingItemStack(itemStack))
                     .build());
             return this;
         }
@@ -109,13 +131,21 @@ public class TubingGui {
         public Builder addItem(String leftClickAction, int slot, ItemStack itemStack) {
             this.guiItems.add(new TubingGuiItem.Builder(null, slot)
                     .withLeftClickAction(leftClickAction)
-                    .withItemStack(itemStack)
+                    .withItemStack(mapToTubingItemStack(itemStack))
                     .build());
             return this;
         }
 
+        private TubingGuiItemStack mapToTubingItemStack(ItemStack itemStack) {
+            return new TubingGuiItemStack(itemStack.getType(), new TubingGuiItemText(itemStack.getItemMeta().getDisplayName(), null), false, itemStack.getItemMeta().getLore().stream().map(l -> {
+                ItemStackLoreLine itemStackLoreLine = new ItemStackLoreLine();
+                itemStackLoreLine.addPart(new TubingGuiItemText(l, null));
+                return itemStackLoreLine;
+            }).collect(Collectors.toList()));
+        }
+
         public TubingGui build() {
-            return new TubingGui(inventory, guiItems, id);
+            return new TubingGui(guiItems, id, title, size);
         }
     }
 }

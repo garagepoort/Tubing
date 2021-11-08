@@ -7,6 +7,8 @@ import be.garagepoort.mcioc.common.ITubingBukkitUtil;
 import be.garagepoort.mcioc.common.TubingPluginProvider;
 import be.garagepoort.mcioc.gui.actionquery.ActionQueryParser;
 import be.garagepoort.mcioc.gui.exceptions.GuiExceptionHandler;
+import be.garagepoort.mcioc.gui.model.TubingChatGui;
+import be.garagepoort.mcioc.gui.model.TubingGui;
 import be.garagepoort.mcioc.gui.templates.ChatTemplate;
 import be.garagepoort.mcioc.gui.templates.ChatTemplateResolver;
 import be.garagepoort.mcioc.gui.templates.GuiTemplate;

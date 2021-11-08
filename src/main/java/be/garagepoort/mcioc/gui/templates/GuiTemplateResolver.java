@@ -2,8 +2,9 @@ package be.garagepoort.mcioc.gui.templates;
 
 import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.common.TubingPluginProvider;
-import be.garagepoort.mcioc.gui.TubingGui;
+import be.garagepoort.mcioc.gui.model.TubingGui;
 import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
+import be.garagepoort.mcioc.gui.templates.xml.TubingGuiStyleParser;
 import be.garagepoort.mcioc.gui.templates.xml.TubingGuiXmlParser;
 import be.garagepoort.mcioc.permissions.TubingPermissionService;
 import freemarker.template.Configuration;
@@ -27,13 +28,15 @@ public class GuiTemplateResolver {
     private final TubingPermissionService tubingPermissionService;
     private final TubingGuiXmlParser tubingGuiXmlParser;
     private final TubingGuiTemplateParser tubingGuiTemplateParser;
+    private final TubingGuiStyleParser tubingGuiStyleParser;
 
-    public GuiTemplateResolver(TubingPluginProvider tubingPluginProvider, TemplateConfigResolver templateConfigResolver, TubingPermissionService tubingPermissionService, TubingGuiXmlParser tubingGuiXmlParser, TubingGuiTemplateParser tubingGuiTemplateParser) {
+    public GuiTemplateResolver(TubingPluginProvider tubingPluginProvider, TemplateConfigResolver templateConfigResolver, TubingPermissionService tubingPermissionService, TubingGuiXmlParser tubingGuiXmlParser, TubingGuiTemplateParser tubingGuiTemplateParser, TubingGuiStyleParser tubingGuiStyleParser) {
         this.tubingPluginProvider = tubingPluginProvider;
         this.templateConfigResolver = templateConfigResolver;
         this.tubingPermissionService = tubingPermissionService;
         this.tubingGuiXmlParser = tubingGuiXmlParser;
         this.tubingGuiTemplateParser = tubingGuiTemplateParser;
+        this.tubingGuiStyleParser = tubingGuiStyleParser;
         freemarkerConfiguration = new Configuration(Configuration.VERSION_2_3_28);
         defaultObjectWrapper = new DefaultObjectWrapper(Configuration.VERSION_2_3_28);
         freemarkerConfiguration.setClassForTemplateLoading(GuiTemplateResolver.this.tubingPluginProvider.getPlugin().getClass(), "/");
@@ -53,7 +56,7 @@ public class GuiTemplateResolver {
             String templateHtml = stringWriter.toString();
             templateHtml = tubingGuiTemplateParser.parseHtml(templateHtml);
             TubingGui tubingGui = tubingGuiXmlParser.parseHtml(player, templateHtml);
-
+            tubingGuiStyleParser.parse(tubingGui);
             return tubingGui;
         } catch (IOException | TemplateException e) {
             throw new TubingGuiException("Could not load template: [" + templatePath + "]", e);

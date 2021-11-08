@@ -1,4 +1,4 @@
-package be.garagepoort.mcioc.gui;
+package be.garagepoort.mcioc.gui.model;
 
 public class TubingGuiActions {
 

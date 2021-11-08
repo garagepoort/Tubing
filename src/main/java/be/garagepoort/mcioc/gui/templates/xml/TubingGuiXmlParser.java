@@ -2,9 +2,12 @@ package be.garagepoort.mcioc.gui.templates.xml;
 
 import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.TubingPlugin;
-import be.garagepoort.mcioc.gui.TubingGui;
-import be.garagepoort.mcioc.gui.TubingGuiItem;
+import be.garagepoort.mcioc.gui.model.ItemStackLoreLine;
+import be.garagepoort.mcioc.gui.model.TubingGui;
+import be.garagepoort.mcioc.gui.model.TubingGuiItem;
 import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
+import be.garagepoort.mcioc.gui.model.TubingGuiItemStack;
+import be.garagepoort.mcioc.gui.model.TubingGuiItemText;
 import be.garagepoort.mcioc.permissions.TubingPermissionService;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
@@ -30,9 +33,9 @@ public class TubingGuiXmlParser {
     private static final String ON_LEFT_CLICK_ATTR = "onLeftClick";
     private static final String ON_RIGHT_CLICK_ATTR = "onRightClick";
     private static final String ON_MIDDLE_CLICK_ATTR = "onMiddleClick";
-    private static final String COLOR_ATTR = "color";
     private static final String SLOT_ATTR = "slot";
     private static final String ID_ATTR = "id";
+    private static final String COLOR_ATTR = "color";
     private static final String MATERIAL_ATTR = "material";
     private static final String NAME_ATTR = "name";
     private static final String ENCHANTED_ATTR = "enchanted";
@@ -41,14 +44,11 @@ public class TubingGuiXmlParser {
 
     private final TubingPermissionService tubingPermissionService;
 
-    public TubingGuiXmlParser(TubingPermissionService tubingPermissionService) {
+    public TubingGuiXmlParser(TubingPermissionService tubingPermissionService, TextStyleParser textStyleParser) {
         this.tubingPermissionService = tubingPermissionService;
     }
 
     public TubingGui parseHtml(Player player, String html) {
-        TubingPlugin.getPlugin().getLogger().info("Parsing: ");
-        TubingPlugin.getPlugin().getLogger().info(html);
-
         Document document = Jsoup.parse(html);
         Element tubingGuiElement = document.selectFirst("TubingGui");
 
@@ -58,30 +58,34 @@ public class TubingGuiXmlParser {
 
         int size = StringUtils.isBlank(tubingGuiElement.attr("size")) ? 54 : Integer.parseInt(tubingGuiElement.attr("size"));
         Element titleElement = tubingGuiElement.selectFirst("title");
-        Element idElement = tubingGuiElement.selectFirst("id");
+        String guiId = getId(tubingGuiElement);
+        TubingPlugin.getPlugin().getLogger().info("GuiId: " + guiId);
         String title = titleElement == null ? "" : titleElement.text();
-        String guiId = idElement == null ? null : idElement.text();
 
-        TubingGui.Builder builder = new TubingGui.Builder(format(title), size, guiId);
+        TubingGui.Builder builder = new TubingGui.Builder(format(title), size, guiId)
+                .withId(guiId);
+
         Elements guiItems = tubingGuiElement.select("GuiItem");
         for (Element guiItem : guiItems) {
             if (validateShowElement(guiItem, player)) {
                 String leftClickAction = guiItem.attr(ON_LEFT_CLICK_ATTR);
                 String rightClickAction = guiItem.attr(ON_RIGHT_CLICK_ATTR);
                 String middleClickAction = guiItem.attr(ON_MIDDLE_CLICK_ATTR);
-                String id = guiItem.attr(ID_ATTR);
+                String guiItemId = getId(guiId, guiItem);
+                TubingPlugin.getPlugin().getLogger().info("guiItemId: " + guiItemId);
 
                 int slot = Integer.parseInt(guiItem.attr(SLOT_ATTR));
                 String material = guiItem.attr(MATERIAL_ATTR);
                 String name = guiItem.attr(NAME_ATTR);
                 boolean enchanted = guiItem.hasAttr(ENCHANTED_ATTR);
-                List<String> loreLines = parseLoreLines(player, guiItem);
+                List<ItemStackLoreLine> loreLines = parseLoreLines(guiItemId, player, guiItem);
 
-                TubingGuiItem tubingGuiItem = new TubingGuiItem.Builder(id, slot)
+                TubingGuiItemStack itemStack = new TubingGuiItemStack(Material.valueOf(material), new TubingGuiItemText(name, null), enchanted, loreLines);
+                TubingGuiItem tubingGuiItem = new TubingGuiItem.Builder(guiItemId, slot)
                         .withLeftClickAction(leftClickAction)
                         .withRightClickAction(rightClickAction)
                         .withMiddleClickAction(middleClickAction)
-                        .withItemStack(itemStack(material, name, loreLines, enchanted))
+                        .withItemStack(itemStack)
                         .build();
                 builder.addItem(tubingGuiItem);
             }
@@ -90,34 +94,49 @@ public class TubingGuiXmlParser {
         return builder.build();
     }
 
-    private List<String> parseLoreLines(Player player, Element guiItem) {
+    private String getId(Element element) {
+        return element.hasAttr(ID_ATTR) ? element.attr("id") : null;
+    }
+
+
+    private String getId(String parentId, Element element) {
+        if (parentId == null) {
+            return null;
+        }
+        return element.hasAttr(ID_ATTR) ? parentId + "_" + element.attr("id") : null;
+    }
+
+    private List<ItemStackLoreLine> parseLoreLines(String parentId, Player player, Element guiItem) {
         Element loreElement = guiItem.selectFirst("Lore");
-        List<String> loreLines = new ArrayList<>();
+        List<ItemStackLoreLine> loreLines = new ArrayList<>();
         if (loreElement != null) {
             if (validateShowElement(loreElement, player)) {
                 List<Element> loreLinesElements = loreElement.select("LoreLine").stream()
                         .filter(g -> validateShowElement(g, player))
                         .collect(Collectors.toList());
 
-                loreLines = loreLinesElements.stream().map(this::parseLoreLine).collect(Collectors.toList());
+                loreLines = loreLinesElements.stream()
+                        .map(l -> parseLoreLine(parentId, l))
+                        .collect(Collectors.toList());
             }
         }
         return loreLines;
     }
 
-    private String parseLoreLine(Element loreLine) {
+    private ItemStackLoreLine parseLoreLine(String parentId, Element loreLine) {
+        ItemStackLoreLine itemStackLoreLine = new ItemStackLoreLine();
         if (loreLine.select(TEXT_TAG).isEmpty()) {
-            return loreLine.text();
+            itemStackLoreLine.addPart(new TubingGuiItemText(loreLine.text(), null));
+            return itemStackLoreLine;
         }
 
-        StringBuilder result = new StringBuilder();
         for (Element textElement : loreLine.select(TEXT_TAG)) {
-            if (textElement.hasAttr(COLOR_ATTR)) {
-                result.append(textElement.attr(COLOR_ATTR));
-            }
-            result.append(textElement.wholeText());
+            TubingGuiItemText tubingGuiItemText = new TubingGuiItemText(textElement.wholeText(), textElement.attr(COLOR_ATTR));
+            String id = getId(parentId, textElement);
+            tubingGuiItemText.setId(id);
+            itemStackLoreLine.addPart(tubingGuiItemText);
         }
-        return result.toString();
+        return itemStackLoreLine;
     }
 
     private boolean validateShowElement(Element guiItem, Player player) {
