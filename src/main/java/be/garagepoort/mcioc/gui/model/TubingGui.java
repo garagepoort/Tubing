@@ -14,15 +14,13 @@ import java.util.stream.Collectors;
 
 public class TubingGui {
 
-    private final StyleId id;
     private boolean build;
     private final String title;
     private int size;
     private Inventory inventory;
     private final Map<Integer, TubingGuiItem> guiItems = new HashMap<>();
 
-    public TubingGui(List<TubingGuiItem> guiItems, StyleId id, String title, int size) {
-        this.id = id;
+    public TubingGui(List<TubingGuiItem> guiItems, String title, int size) {
         this.size = size;
         this.title = title;
         for (TubingGuiItem guiItem : guiItems) {
@@ -50,7 +48,7 @@ public class TubingGui {
     }
 
     public StyleId getId() {
-        return new StyleId("inventory", id, Collections.emptyList());
+        return new StyleId("", "inventory", Collections.emptyList());
     }
 
     public Map<Integer, String> getLeftActions() {
@@ -82,7 +80,6 @@ public class TubingGui {
     }
 
     public static class Builder {
-        private StyleId id;
         private final String title;
         private final int size;
         private final List<TubingGuiItem> guiItems = new ArrayList<>();
@@ -90,17 +87,6 @@ public class TubingGui {
         public Builder(String title, int size) {
             this.title = title;
             this.size = size;
-        }
-
-        public Builder(String title, int size, StyleId guiId) {
-            this.title = title;
-            this.size = size;
-            this.id = guiId;
-        }
-
-        public Builder withId(StyleId id) {
-            this.id = id;
-            return this;
         }
 
         public Builder addItem(TubingGuiItem tubingGuiItem) {
@@ -147,7 +133,7 @@ public class TubingGui {
         }
 
         public TubingGui build() {
-            return new TubingGui(guiItems, id, title, size);
+            return new TubingGui(guiItems, title, size);
         }
     }
 }

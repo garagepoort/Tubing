@@ -60,8 +60,7 @@ public class TubingGuiXmlParser {
         TubingPlugin.getPlugin().getLogger().info("GuiId: " + guiId);
         String title = titleElement == null ? "" : titleElement.text();
 
-        TubingGui.Builder builder = new TubingGui.Builder(format(title), size, guiId)
-                .withId(guiId);
+        TubingGui.Builder builder = new TubingGui.Builder(format(title), size);
 
         Elements guiItems = tubingGuiElement.select("GuiItem");
         for (Element guiItem : guiItems) {
@@ -92,22 +91,39 @@ public class TubingGuiXmlParser {
     }
 
     private StyleId getId(Element element) {
+        if (!element.hasAttr(CLASS_ATTR) && !element.hasAttr(ID_ATTR)) {
+            return null;
+        }
+
+        String path = element.hasParent() ? getPath(element.parent()) : "";
+
+        TubingPlugin.getPlugin().getLogger().info("Found path: " + path);
         List<String> classes = new ArrayList<>();
         if (element.hasAttr(CLASS_ATTR)) {
             classes = Arrays.asList(element.attr(CLASS_ATTR).split(" "));
         }
 
-        if (!element.hasParent() && !element.hasAttr(ID_ATTR)) {
-            return null;
+        if (element.hasAttr(ID_ATTR)) {
+            return new StyleId(path, element.attr("id"), classes);
+        } else {
+            return new StyleId(path, null, classes);
         }
-        if (element.hasParent() && !element.hasAttr(ID_ATTR)) {
-            return getId(element.parent());
-        }
-        if (!element.hasParent() && element.hasAttr(ID_ATTR)) {
-            return new StyleId(element.attr("id"), null, classes);
-        }
+    }
 
-        return new StyleId(element.attr("id"), getId(element.parent()), classes);
+    private String getPath(Element element) {
+        if (!element.hasParent()) {
+            return element.attr("id");
+        }
+        String parentPath = getPath(element.parent());
+        if (element.hasAttr(ID_ATTR)) {
+            if (StringUtils.isBlank(parentPath)) {
+                return element.attr("id");
+            } else {
+                return parentPath + "_" + element.attr("id");
+
+            }
+        }
+        return parentPath;
     }
 
     private List<ItemStackLoreLine> parseLoreLines(Player player, Element guiItem) {

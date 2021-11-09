@@ -1,36 +1,27 @@
 package be.garagepoort.mcioc.gui.templates.xml;
 
 import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
-import java.util.Optional;
 
 public class StyleId {
 
+    private final String path;
     private final String id;
     private List<String> classes;
-    private final StyleId parent;
 
-    public StyleId(String id, StyleId parent, List<String> classes) {
+    public StyleId(String path, String id, List<String> classes) {
+        this.path = path;
         this.id = id;
-        this.parent = parent;
         this.classes = classes;
     }
 
-    public String getId() {
-        return id;
-    }
-
     public String getFullId() {
-        return parent == null ? id : parent.getFullId() + "_" + id;
-    }
-
-    public Optional<StyleId> getParent() {
-        return Optional.ofNullable(parent);
-    }
-
-    public boolean hasParent() {
-        return parent != null;
+        if (id == null) {
+            return null;
+        }
+        return StringUtils.isBlank(path) ? id : path + "_" + id;
     }
 
     public boolean matchesClassSelector(String selector) {
@@ -48,7 +39,7 @@ public class StyleId {
         String selectWithoutClass = split[0];
         String className = split[1];
 
-        return getFullId().contains(selectWithoutClass) && classes.contains(className);
+        return path.contains(selectWithoutClass) && classes.contains(className);
     }
 
     public void setClasses(List<String> classes) {
