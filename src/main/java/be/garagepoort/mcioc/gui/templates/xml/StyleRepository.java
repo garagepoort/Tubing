@@ -73,28 +73,21 @@ public class StyleRepository {
             if (styleConfig == null) {
                 styleConfig = styleClasses.get(matchingClass);
             } else {
-                styleConfig.update(styleClasses.get(matchingClass));
+                styleConfig = styleConfig.update(styleClasses.get(matchingClass));
             }
         }
 
-        if (styleIds.containsKey(id.getFullId())) {
+        if (id.getFullId() != null && styleIds.containsKey(id.getFullId())) {
+            TubingPlugin.getPlugin().getLogger().info("Matched ID: [" + id.getFullId() + "]");
             if (styleConfig == null) {
                 styleConfig = styleIds.get(id.getFullId());
             } else {
-                styleConfig.update(styleIds.get(id.getFullId()));
+                styleConfig = styleConfig.update(styleIds.get(id.getFullId()));
             }
         }
 
         TubingPlugin.getPlugin().getLogger().info("Style found: [" + styleConfig + "]");
         return Optional.ofNullable(styleConfig);
-    }
-
-    public Optional<StyleConfig> getStyleConfigByClass(StyleId id) {
-        if (!styleIds.containsKey(id.getFullId())) {
-            return Optional.empty();
-        }
-
-        return Optional.ofNullable(styleIds.get(id.getFullId()));
     }
 
     public static FileConfiguration loadConfiguration(File file) {

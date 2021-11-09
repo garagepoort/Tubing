@@ -46,13 +46,19 @@ public class StyleConfig {
         return Optional.ofNullable(slot);
     }
 
-    public void update(StyleConfig styleConfig) {
-        styleConfig.getSize().ifPresent(s -> this.size = s);
-        styleConfig.getSlot().ifPresent(s -> this.slot = s);
-        styleConfig.getMaterial().ifPresent(s -> this.material = s);
-        styleConfig.getColor().ifPresent(s -> this.color = s);
-        styleConfig.isHidden().ifPresent(s -> this.hidden = s);
-        styleConfig.isEnchanted().ifPresent(s -> this.enchanted = s);
+    public StyleConfig update(StyleConfig styleConfig) {
+        StyleConfig result = duplicate();
+        styleConfig.getSize().ifPresent(s -> result.size = s);
+        styleConfig.getSlot().ifPresent(s -> result.slot = s);
+        styleConfig.getMaterial().ifPresent(s -> result.material = s);
+        styleConfig.getColor().ifPresent(s -> result.color = s);
+        styleConfig.isHidden().ifPresent(s -> result.hidden = s);
+        styleConfig.isEnchanted().ifPresent(s -> result.enchanted = s);
+        return result;
+    }
+
+    private StyleConfig duplicate() {
+        return new StyleConfig(color, material, hidden, enchanted, slot, size);
     }
 
     @Override
