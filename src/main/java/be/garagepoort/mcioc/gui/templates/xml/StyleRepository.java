@@ -11,15 +11,19 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @IocBean
 public class StyleRepository {
 
     private final Map<String, StyleConfig> styleIds = new HashMap<>();
+    private final Map<String, StyleConfig> styleClasses = new HashMap<>();
 
     public StyleRepository() {
         String directoryPath = TubingPlugin.getPlugin().getDataFolder() + File.separator + "styles";
@@ -33,7 +37,11 @@ public class StyleRepository {
             FileConfiguration fileConfiguration = loadConfiguration(file);
             String fileNameWithoutExtension = getFileNameWithoutExtension(file);
             for (String key : fileConfiguration.getKeys(false)) {
-                styleIds.put(fileNameWithoutExtension + "_" + key, mapStyleConfig(fileConfiguration.getConfigurationSection(key)));
+                if (key.contains("$")) {
+                    styleClasses.put(fileNameWithoutExtension + "_" + key, mapStyleConfig(fileConfiguration.getConfigurationSection(key)));
+                } else {
+                    styleIds.put(fileNameWithoutExtension + "_" + key, mapStyleConfig(fileConfiguration.getConfigurationSection(key)));
+                }
             }
         }
     }
@@ -52,17 +60,41 @@ public class StyleRepository {
         return file.getName().substring(0, file.getName().lastIndexOf('.'));
     }
 
-    public Optional<StyleConfig> getStyleConfig(String guidId) {
-        String[] identifiers = guidId.split("_");
-        if (identifiers.length < 1) {
-            throw new TubingGuiException("Invalid style identifier: [" + guidId + "]");
+    public Optional<StyleConfig> getStyleConfigById(StyleId id) {
+        TubingPlugin.getPlugin().getLogger().info("Registered classes: [" + String.join(",", styleClasses.keySet()) + "]");
+        List<String> matchingClasses = styleClasses.keySet().stream()
+                .filter(id::matchesClassSelector)
+                .sorted(Comparator.comparingInt(c -> c.split("_").length))
+                .collect(Collectors.toList());
+
+        StyleConfig styleConfig = null;
+        for (String matchingClass : matchingClasses) {
+            TubingPlugin.getPlugin().getLogger().info("Matched style: [" + matchingClass + "]");
+            if (styleConfig == null) {
+                styleConfig = styleClasses.get(matchingClass);
+            } else {
+                styleConfig.update(styleClasses.get(matchingClass));
+            }
         }
 
-        if (!styleIds.containsKey(guidId)) {
+        if (styleIds.containsKey(id.getFullId())) {
+            if (styleConfig == null) {
+                styleConfig = styleIds.get(id.getFullId());
+            } else {
+                styleConfig.update(styleIds.get(id.getFullId()));
+            }
+        }
+
+        TubingPlugin.getPlugin().getLogger().info("Style found: [" + styleConfig + "]");
+        return Optional.ofNullable(styleConfig);
+    }
+
+    public Optional<StyleConfig> getStyleConfigByClass(StyleId id) {
+        if (!styleIds.containsKey(id.getFullId())) {
             return Optional.empty();
         }
 
-        return Optional.ofNullable(styleIds.get(guidId));
+        return Optional.ofNullable(styleIds.get(id.getFullId()));
     }
 
     public static FileConfiguration loadConfiguration(File file) {

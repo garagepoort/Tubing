@@ -23,11 +23,9 @@ public class TubingGuiStyleParser {
             return;
         }
 
-        Optional<StyleConfig> style = styleRepository.getStyleConfig(tubingGui.getId());
+        Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGui.getId());
         if (style.isPresent()) {
-            if (style.get().getSize().isPresent()) {
-                tubingGui.setSize(style.get().getSize().get());
-            }
+            style.get().getSize().ifPresent(tubingGui::setSize);
         }
         for (TubingGuiItem value : tubingGui.getGuiItems().values()) {
             tubingGuiItemStyleParser.parse(value);

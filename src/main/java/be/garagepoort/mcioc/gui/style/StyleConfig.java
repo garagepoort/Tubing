@@ -6,12 +6,12 @@ import java.util.Optional;
 
 public class StyleConfig {
 
-    private final String color;
-    private final Material material;
-    private final boolean hidden;
-    private final Boolean enchanted;
-    private final Integer slot;
-    private final Integer size;
+    private String color;
+    private Material material;
+    private Boolean hidden;
+    private Boolean enchanted;
+    private Integer slot;
+    private Integer size;
 
     public StyleConfig(String color, Material material, boolean hidden, Boolean enchanted, Integer slot, Integer size) {
         this.color = color;
@@ -38,11 +38,32 @@ public class StyleConfig {
         return Optional.ofNullable(size);
     }
 
-    public boolean isHidden() {
-        return hidden;
+    public Optional<Boolean> isHidden() {
+        return Optional.of(hidden);
     }
 
     public Optional<Integer> getSlot() {
         return Optional.ofNullable(slot);
+    }
+
+    public void update(StyleConfig styleConfig) {
+        styleConfig.getSize().ifPresent(s -> this.size = s);
+        styleConfig.getSlot().ifPresent(s -> this.slot = s);
+        styleConfig.getMaterial().ifPresent(s -> this.material = s);
+        styleConfig.getColor().ifPresent(s -> this.color = s);
+        styleConfig.isHidden().ifPresent(s -> this.hidden = s);
+        styleConfig.isEnchanted().ifPresent(s -> this.enchanted = s);
+    }
+
+    @Override
+    public String toString() {
+        return "StyleConfig{" +
+                "color='" + color + '\'' +
+                ", material=" + material +
+                ", hidden=" + hidden +
+                ", enchanted=" + enchanted +
+                ", slot=" + slot +
+                ", size=" + size +
+                '}';
     }
 }

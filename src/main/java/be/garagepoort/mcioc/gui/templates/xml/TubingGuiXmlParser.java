@@ -2,27 +2,24 @@ package be.garagepoort.mcioc.gui.templates.xml;
 
 import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
 import be.garagepoort.mcioc.gui.model.ItemStackLoreLine;
 import be.garagepoort.mcioc.gui.model.TubingGui;
 import be.garagepoort.mcioc.gui.model.TubingGuiItem;
-import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
 import be.garagepoort.mcioc.gui.model.TubingGuiItemStack;
 import be.garagepoort.mcioc.gui.model.TubingGuiItemText;
 import be.garagepoort.mcioc.permissions.TubingPermissionService;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemFlag;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,6 +38,7 @@ public class TubingGuiXmlParser {
     private static final String ENCHANTED_ATTR = "enchanted";
     private static final String TRUE = "true";
     private static final String PERMISSION_ATTR = "permission";
+    public static final String CLASS_ATTR = "class";
 
     private final TubingPermissionService tubingPermissionService;
 
@@ -58,7 +56,7 @@ public class TubingGuiXmlParser {
 
         int size = StringUtils.isBlank(tubingGuiElement.attr("size")) ? 54 : Integer.parseInt(tubingGuiElement.attr("size"));
         Element titleElement = tubingGuiElement.selectFirst("title");
-        String guiId = getId(tubingGuiElement);
+        StyleId guiId = getId(tubingGuiElement);
         TubingPlugin.getPlugin().getLogger().info("GuiId: " + guiId);
         String title = titleElement == null ? "" : titleElement.text();
 
@@ -71,14 +69,13 @@ public class TubingGuiXmlParser {
                 String leftClickAction = guiItem.attr(ON_LEFT_CLICK_ATTR);
                 String rightClickAction = guiItem.attr(ON_RIGHT_CLICK_ATTR);
                 String middleClickAction = guiItem.attr(ON_MIDDLE_CLICK_ATTR);
-                String guiItemId = getId(guiId, guiItem);
-                TubingPlugin.getPlugin().getLogger().info("guiItemId: " + guiItemId);
+                StyleId guiItemId = getId(guiItem);
 
                 int slot = Integer.parseInt(guiItem.attr(SLOT_ATTR));
                 String material = guiItem.attr(MATERIAL_ATTR);
                 String name = guiItem.attr(NAME_ATTR);
                 boolean enchanted = guiItem.hasAttr(ENCHANTED_ATTR);
-                List<ItemStackLoreLine> loreLines = parseLoreLines(guiItemId, player, guiItem);
+                List<ItemStackLoreLine> loreLines = parseLoreLines(player, guiItem);
 
                 TubingGuiItemStack itemStack = new TubingGuiItemStack(Material.valueOf(material), new TubingGuiItemText(name, null), enchanted, loreLines);
                 TubingGuiItem tubingGuiItem = new TubingGuiItem.Builder(guiItemId, slot)
@@ -94,19 +91,26 @@ public class TubingGuiXmlParser {
         return builder.build();
     }
 
-    private String getId(Element element) {
-        return element.hasAttr(ID_ATTR) ? element.attr("id") : null;
-    }
+    private StyleId getId(Element element) {
+        List<String> classes = new ArrayList<>();
+        if (element.hasAttr(CLASS_ATTR)) {
+            classes = Arrays.asList(element.attr(CLASS_ATTR).split(" "));
+        }
 
-
-    private String getId(String parentId, Element element) {
-        if (parentId == null) {
+        if (!element.hasParent() && !element.hasAttr(ID_ATTR)) {
             return null;
         }
-        return element.hasAttr(ID_ATTR) ? parentId + "_" + element.attr("id") : null;
+        if (element.hasParent() && !element.hasAttr(ID_ATTR)) {
+            return getId(element.parent());
+        }
+        if (!element.hasParent() && element.hasAttr(ID_ATTR)) {
+            return new StyleId(element.attr("id"), null, classes);
+        }
+
+        return new StyleId(element.attr("id"), getId(element.parent()), classes);
     }
 
-    private List<ItemStackLoreLine> parseLoreLines(String parentId, Player player, Element guiItem) {
+    private List<ItemStackLoreLine> parseLoreLines(Player player, Element guiItem) {
         Element loreElement = guiItem.selectFirst("Lore");
         List<ItemStackLoreLine> loreLines = new ArrayList<>();
         if (loreElement != null) {
@@ -116,14 +120,14 @@ public class TubingGuiXmlParser {
                         .collect(Collectors.toList());
 
                 loreLines = loreLinesElements.stream()
-                        .map(l -> parseLoreLine(parentId, l))
+                        .map(this::parseLoreLine)
                         .collect(Collectors.toList());
             }
         }
         return loreLines;
     }
 
-    private ItemStackLoreLine parseLoreLine(String parentId, Element loreLine) {
+    private ItemStackLoreLine parseLoreLine(Element loreLine) {
         ItemStackLoreLine itemStackLoreLine = new ItemStackLoreLine();
         if (loreLine.select(TEXT_TAG).isEmpty()) {
             itemStackLoreLine.addPart(new TubingGuiItemText(loreLine.text(), null));
@@ -132,7 +136,7 @@ public class TubingGuiXmlParser {
 
         for (Element textElement : loreLine.select(TEXT_TAG)) {
             TubingGuiItemText tubingGuiItemText = new TubingGuiItemText(textElement.wholeText(), textElement.attr(COLOR_ATTR));
-            String id = getId(parentId, textElement);
+            StyleId id = getId(textElement);
             tubingGuiItemText.setId(id);
             itemStackLoreLine.addPart(tubingGuiItemText);
         }
@@ -151,47 +155,8 @@ public class TubingGuiXmlParser {
         return StringUtils.isBlank(attr) || tubingPermissionService.has(player, attr);
     }
 
-    private ItemStack itemStack(String material, String name, List<String> lore, boolean enchanted) {
-        ItemStack itemStack = new ItemStack(Material.valueOf(material));
-        itemStack.setAmount(1);
-
-        addName(itemStack, name);
-        addLore(itemStack, lore);
-
-        ItemMeta meta = itemStack.getItemMeta();
-        if (enchanted) {
-            itemStack.addUnsafeEnchantment(Enchantment.DAMAGE_ALL, 1);
-        }
-        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        meta.addItemFlags(ItemFlag.HIDE_DESTROYS);
-        meta.addItemFlags(ItemFlag.HIDE_PLACED_ON);
-        meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
-        meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
-        itemStack.setItemMeta(meta);
-        return itemStack;
-    }
-
-    private void addName(ItemStack itemStack, String name) {
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        itemMeta.setDisplayName(name.equals("") ? " " : format(name));
-        itemStack.setItemMeta(itemMeta);
-    }
-
-    private void addLore(ItemStack itemStack, List<String> lore) {
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        List<String> original = itemMeta.getLore();
-        if (original == null) original = new ArrayList<>();
-        original.addAll(format(lore));
-        itemMeta.setLore(original);
-        itemStack.setItemMeta(itemMeta);
-    }
-
     private String format(String string) {
         return ChatColor.translateAlternateColorCodes('&', string);
     }
 
-    private List<String> format(List<String> strings) {
-        return strings.stream().map(this::format).collect(Collectors.toList());
-    }
 }

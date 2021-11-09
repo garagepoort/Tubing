@@ -1,10 +1,12 @@
 package be.garagepoort.mcioc.gui.model;
 
+import be.garagepoort.mcioc.gui.templates.xml.StyleId;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,14 +14,14 @@ import java.util.stream.Collectors;
 
 public class TubingGui {
 
-    private final String id;
+    private final StyleId id;
     private boolean build;
-    private String title;
+    private final String title;
     private int size;
     private Inventory inventory;
     private final Map<Integer, TubingGuiItem> guiItems = new HashMap<>();
 
-    public TubingGui(List<TubingGuiItem> guiItems, String id, String title, int size) {
+    public TubingGui(List<TubingGuiItem> guiItems, StyleId id, String title, int size) {
         this.id = id;
         this.size = size;
         this.title = title;
@@ -47,8 +49,8 @@ public class TubingGui {
         return inventory;
     }
 
-    public String getId() {
-        return id + "_inventory";
+    public StyleId getId() {
+        return new StyleId("inventory", id, Collections.emptyList());
     }
 
     public Map<Integer, String> getLeftActions() {
@@ -80,7 +82,7 @@ public class TubingGui {
     }
 
     public static class Builder {
-        private String id;
+        private StyleId id;
         private final String title;
         private final int size;
         private final List<TubingGuiItem> guiItems = new ArrayList<>();
@@ -90,13 +92,13 @@ public class TubingGui {
             this.size = size;
         }
 
-        public Builder(String title, int size, String guiId) {
+        public Builder(String title, int size, StyleId guiId) {
             this.title = title;
             this.size = size;
             this.id = guiId;
         }
 
-        public Builder withId(String id) {
+        public Builder withId(StyleId id) {
             this.id = id;
             return this;
         }

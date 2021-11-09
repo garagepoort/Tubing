@@ -1,7 +1,9 @@
 package be.garagepoort.mcioc.gui.model;
 
+import be.garagepoort.mcioc.gui.templates.xml.StyleId;
+
 public class TubingGuiItemText {
-    private String id;
+    private StyleId id;
     private String text;
     private String color;
     private boolean hidden;
@@ -19,11 +21,11 @@ public class TubingGuiItemText {
         return hidden;
     }
 
-    public String getId() {
+    public StyleId getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(StyleId id) {
         this.id = id;
     }
 

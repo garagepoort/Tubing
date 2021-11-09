@@ -24,10 +24,10 @@ public class TubingGuiItemStyleParser {
             return;
         }
 
-        Optional<StyleConfig> style = styleRepository.getStyleConfig(tubingGuiItem.getId().get());
+        Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGuiItem.getId().get());
         if (style.isPresent()) {
-            if (style.get().isHidden()) {
-                tubingGuiItem.setHidden(true);
+            if (style.get().isHidden().isPresent()) {
+                tubingGuiItem.setHidden(style.get().isHidden().get());
             }
             if (style.get().isEnchanted().isPresent()) {
                 tubingGuiItem.getTubingGuiItemStack().setEnchanted(style.get().isEnchanted().get());

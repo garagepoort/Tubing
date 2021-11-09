@@ -20,10 +20,10 @@ public class TextStyleParser {
             return;
         }
 
-        Optional<StyleConfig> style = styleRepository.getStyleConfig(tubingGuiItemText.getId());
+        Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGuiItemText.getId());
         if (style.isPresent()) {
-            if (style.get().isHidden()) {
-                tubingGuiItemText.setHidden(true);
+            if (style.get().isHidden().isPresent()) {
+                tubingGuiItemText.setHidden(style.get().isHidden().get());
             }
             if (style.get().getColor().isPresent()) {
                 tubingGuiItemText.setColor(style.get().getColor().get());

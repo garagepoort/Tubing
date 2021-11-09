@@ -1,10 +1,12 @@
 package be.garagepoort.mcioc.gui.model;
 
+import be.garagepoort.mcioc.gui.templates.xml.StyleId;
+
 import java.util.Optional;
 
 public class TubingGuiItem {
 
-    private final String id;
+    private final StyleId id;
     private int slot;
     private final String leftClickAction;
     private final String rightClickAction;
@@ -12,7 +14,7 @@ public class TubingGuiItem {
     private final TubingGuiItemStack tubingGuiItemStack;
     private boolean hidden;
 
-    public TubingGuiItem(String id, int slot, String leftClickAction, String rightClickAction, String middleClickAction, TubingGuiItemStack itemStack, boolean hidden) {
+    public TubingGuiItem(StyleId id, int slot, String leftClickAction, String rightClickAction, String middleClickAction, TubingGuiItemStack itemStack, boolean hidden) {
         this.id = id;
         this.slot = slot;
         this.leftClickAction = leftClickAction;
@@ -22,7 +24,7 @@ public class TubingGuiItem {
         this.hidden = hidden;
     }
 
-    public Optional<String> getId() {
+    public Optional<StyleId> getId() {
         return Optional.ofNullable(id);
     }
 
@@ -59,7 +61,7 @@ public class TubingGuiItem {
     }
 
     public static class Builder {
-        private final String id;
+        private final StyleId id;
         private final int slot;
         private String leftClickAction = TubingGuiActions.NOOP;
         private String rightClickAction = TubingGuiActions.NOOP;
@@ -67,7 +69,7 @@ public class TubingGuiItem {
         private TubingGuiItemStack itemStack;
         private boolean hidden;
 
-        public Builder(String id, int slot) {
+        public Builder(StyleId id, int slot) {
             this.id = id;
             this.slot = slot;
         }
