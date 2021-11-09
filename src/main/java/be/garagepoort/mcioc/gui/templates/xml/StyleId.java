@@ -22,10 +22,7 @@ public class StyleId {
     }
 
     public String getFullId() {
-        if(id == null) {
-            return null;
-        }
-        return parent == null ? id : getFullId() + "_" + id;
+        return parent == null ? id : parent.getFullId() + "_" + id;
     }
 
     public Optional<StyleId> getParent() {
