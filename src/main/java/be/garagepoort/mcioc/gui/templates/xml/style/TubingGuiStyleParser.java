@@ -19,14 +19,11 @@ public class TubingGuiStyleParser {
     }
 
     public void parse(TubingGui tubingGui) {
-        if (!tubingGui.getId().isPresent()) {
-            return;
+        if (tubingGui.getId().isPresent()) {
+            Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGui.getId().get());
+            style.ifPresent(styleConfig -> styleConfig.getSize().ifPresent(tubingGui::setSize));
         }
 
-        Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGui.getId().get());
-        if (style.isPresent()) {
-            style.get().getSize().ifPresent(tubingGui::setSize);
-        }
         for (TubingGuiItem value : tubingGui.getGuiItems().values()) {
             tubingGuiItemStyleParser.parse(value);
         }

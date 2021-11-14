@@ -19,11 +19,11 @@ public class TubingGuiItemStyleParser {
     }
 
     public void parse(TubingGuiItem tubingGuiItem) {
-        if (!tubingGuiItem.getId().isPresent()) {
+        if (!tubingGuiItem.getStyleId().isPresent()) {
             return;
         }
 
-        Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGuiItem.getId().get());
+        Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGuiItem.getStyleId().get());
         if (style.isPresent()) {
             if (style.get().isHidden().isPresent()) {
                 tubingGuiItem.setHidden(style.get().isHidden().get());

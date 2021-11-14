@@ -4,6 +4,8 @@ import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class StyleId {
 
@@ -21,8 +23,8 @@ public class StyleId {
         this.id = id;
     }
 
-    public String getId() {
-        return id;
+    public Optional<String> getId() {
+        return Optional.ofNullable(id);
     }
 
     public String getFullId() {
@@ -52,5 +54,14 @@ public class StyleId {
 
     public void setClasses(List<String> classes) {
         this.classes = classes;
+    }
+
+    @Override
+    public String toString() {
+        return "StyleId{" +
+                "path='" + path + '\'' +
+                ", id='" + id + '\'' +
+                ", classes=" + classes.stream().collect(Collectors.joining(",")) +
+                '}';
     }
 }

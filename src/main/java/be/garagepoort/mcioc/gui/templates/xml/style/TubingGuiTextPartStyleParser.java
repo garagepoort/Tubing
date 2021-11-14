@@ -1,6 +1,7 @@
 package be.garagepoort.mcioc.gui.templates.xml.style;
 
 import be.garagepoort.mcioc.IocBean;
+import be.garagepoort.mcioc.TubingPlugin;
 import be.garagepoort.mcioc.gui.model.TubingGuiTextPart;
 import be.garagepoort.mcioc.gui.style.StyleConfig;
 
@@ -22,6 +23,8 @@ public class TubingGuiTextPartStyleParser {
 
         Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGuiTextPart.getId());
         if (style.isPresent()) {
+            TubingPlugin.getPlugin().getLogger().info("Found style for id: " + tubingGuiTextPart.getId());
+            TubingPlugin.getPlugin().getLogger().info("Style config: " + style.get());
             if (style.get().isHidden().isPresent()) {
                 tubingGuiTextPart.setHidden(style.get().isHidden().get());
             }

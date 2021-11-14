@@ -60,7 +60,6 @@ public class TubingGuiXmlParser {
         Element titleElement = tubingGuiElement.selectFirst("title");
         StyleId guiId = getId(tubingGuiElement);
         String title = titleElement == null ? "" : titleElement.text();
-
         TubingGui.Builder builder = new TubingGui.Builder(guiId, format(title), size);
 
         Elements guiItems = tubingGuiElement.select("GuiItem");
@@ -95,11 +94,11 @@ public class TubingGuiXmlParser {
 
     private TubingGuiText parseItemName(Element guiItem, Element nameElement) {
         TubingGuiText tubingGuiText;
-        if(nameElement != null) {
+        if (nameElement != null) {
             tubingGuiText = parseTextElement(nameElement);
-        }else {
+        } else {
             String name = "Not configured";
-            if(guiItem.hasAttr(NAME_ATTR)) {
+            if (guiItem.hasAttr(NAME_ATTR)) {
                 name = guiItem.attr(NAME_ATTR);
             }
             tubingGuiText = new TubingGuiText();

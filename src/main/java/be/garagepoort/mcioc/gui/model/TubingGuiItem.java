@@ -24,7 +24,7 @@ public class TubingGuiItem {
         this.hidden = hidden;
     }
 
-    public Optional<StyleId> getId() {
+    public Optional<StyleId> getStyleId() {
         return Optional.ofNullable(id);
     }
 

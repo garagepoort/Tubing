@@ -35,12 +35,15 @@ public class StyleRepository {
 
         for (File file : Objects.requireNonNull(styleDir.listFiles())) {
             FileConfiguration fileConfiguration = loadConfiguration(file);
-            String fileNameWithoutExtension = getFileNameWithoutExtension(file);
+            String idPrefix = getFileIdPrefix(file);
             for (String key : fileConfiguration.getKeys(false)) {
+                StyleConfig styleConfig = mapStyleConfig(fileConfiguration.getConfigurationSection(key));
+                TubingPlugin.getPlugin().getLogger().info("Registration key: " + idPrefix + key);
+                TubingPlugin.getPlugin().getLogger().info("Registering style config: " + styleConfig);
                 if (key.contains("$")) {
-                    styleClasses.put(fileNameWithoutExtension + "_" + key, mapStyleConfig(fileConfiguration.getConfigurationSection(key)));
+                    styleClasses.put(idPrefix + key, styleConfig);
                 } else {
-                    styleIds.put(fileNameWithoutExtension + "_" + key, mapStyleConfig(fileConfiguration.getConfigurationSection(key)));
+                    styleIds.put(idPrefix + key, styleConfig);
                 }
             }
         }
@@ -56,12 +59,12 @@ public class StyleRepository {
                 section.contains("size") ? section.getInt("size") : null);
     }
 
-    private String getFileNameWithoutExtension(File file) {
+    private String getFileIdPrefix(File file) {
         String filename = file.getName().substring(0, file.getName().lastIndexOf('.'));
         if (filename.equalsIgnoreCase("style")) {
             return "";
         }
-        return filename;
+        return filename + "_";
     }
 
     public Optional<StyleConfig> getStyleConfigById(StyleId id) {

@@ -77,10 +77,10 @@ public class ItemStackMapper {
         List<String> result = new ArrayList<>();
         String partText = "";
         for (TubingGuiTextPart part : itemStackLoreLine.getParts()) {
-            if (part.isHidden() || part.getId() == null) {
+            if (part.getId() == null || !part.getId().getId().isPresent()) {
                 continue;
             }
-            String idText = "(" + part.getId().getId() + ")";
+            String idText = "(" + part.getId().getId().get() + ")";
             String line = partText + idText;
 
             if (line.length() > LINE_LENGTH && idText.length() <= LINE_LENGTH) {
@@ -106,9 +106,9 @@ public class ItemStackMapper {
     }
 
     private String getId(TubingGuiItem tubingGui, boolean showIds) {
-        if (!showIds || !tubingGui.getId().isPresent()) {
+        if (!showIds || !tubingGui.getStyleId().isPresent() || !tubingGui.getStyleId().get().getId().isPresent()) {
             return "";
         }
-        return "(" + tubingGui.getId().get().getId().split("_")[0] + ") ";
+        return "(" + tubingGui.getStyleId().get().getId().get().split("_")[0] + ") ";
     }
 }
