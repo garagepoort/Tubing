@@ -1,6 +1,6 @@
 package be.garagepoort.mcioc.gui.model;
 
-import be.garagepoort.mcioc.gui.templates.xml.StyleId;
+import be.garagepoort.mcioc.gui.templates.xml.style.StyleId;
 
 import java.util.Optional;
 

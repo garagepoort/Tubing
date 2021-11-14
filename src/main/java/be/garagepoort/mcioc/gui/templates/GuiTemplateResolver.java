@@ -4,7 +4,7 @@ import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.common.TubingPluginProvider;
 import be.garagepoort.mcioc.gui.model.TubingGui;
 import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
-import be.garagepoort.mcioc.gui.templates.xml.TubingGuiStyleParser;
+import be.garagepoort.mcioc.gui.templates.xml.style.TubingGuiStyleParser;
 import be.garagepoort.mcioc.gui.templates.xml.TubingGuiXmlParser;
 import be.garagepoort.mcioc.permissions.TubingPermissionService;
 import freemarker.template.Configuration;

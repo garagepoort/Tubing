@@ -1,4 +1,4 @@
-package be.garagepoort.mcioc.gui.templates.xml;
+package be.garagepoort.mcioc.gui.templates.xml.style;
 
 import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.TubingPlugin;
@@ -57,11 +57,18 @@ public class StyleRepository {
     }
 
     private String getFileNameWithoutExtension(File file) {
-        return file.getName().substring(0, file.getName().lastIndexOf('.'));
+        String filename = file.getName().substring(0, file.getName().lastIndexOf('.'));
+        if (filename.equalsIgnoreCase("style")) {
+            return "";
+        }
+        return filename;
     }
 
     public Optional<StyleConfig> getStyleConfigById(StyleId id) {
-        TubingPlugin.getPlugin().getLogger().info("Registered classes: [" + String.join(",", styleClasses.keySet()) + "]");
+        if (id == null) {
+            return Optional.empty();
+        }
+
         List<String> matchingClasses = styleClasses.keySet().stream()
                 .filter(id::matchesClassSelector)
                 .sorted(Comparator.comparingInt(c -> c.split("_").length))
@@ -69,7 +76,6 @@ public class StyleRepository {
 
         StyleConfig styleConfig = null;
         for (String matchingClass : matchingClasses) {
-            TubingPlugin.getPlugin().getLogger().info("Matched style: [" + matchingClass + "]");
             if (styleConfig == null) {
                 styleConfig = styleClasses.get(matchingClass);
             } else {
@@ -78,7 +84,6 @@ public class StyleRepository {
         }
 
         if (id.getFullId() != null && styleIds.containsKey(id.getFullId())) {
-            TubingPlugin.getPlugin().getLogger().info("Matched ID: [" + id.getFullId() + "]");
             if (styleConfig == null) {
                 styleConfig = styleIds.get(id.getFullId());
             } else {
@@ -86,7 +91,6 @@ public class StyleRepository {
             }
         }
 
-        TubingPlugin.getPlugin().getLogger().info("Style found: [" + styleConfig + "]");
         return Optional.ofNullable(styleConfig);
     }
 

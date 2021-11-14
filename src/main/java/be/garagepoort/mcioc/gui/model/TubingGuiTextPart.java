@@ -1,14 +1,14 @@
 package be.garagepoort.mcioc.gui.model;
 
-import be.garagepoort.mcioc.gui.templates.xml.StyleId;
+import be.garagepoort.mcioc.gui.templates.xml.style.StyleId;
 
-public class TubingGuiItemText {
+public class TubingGuiTextPart {
     private StyleId id;
     private String text;
     private String color;
     private boolean hidden;
 
-    public TubingGuiItemText(String text, String color) {
+    public TubingGuiTextPart(String text, String color) {
         this.text = text;
         this.color = color;
     }

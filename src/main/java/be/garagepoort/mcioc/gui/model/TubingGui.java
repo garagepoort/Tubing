@@ -1,54 +1,54 @@
 package be.garagepoort.mcioc.gui.model;
 
-import be.garagepoort.mcioc.gui.templates.xml.StyleId;
-import org.bukkit.Bukkit;
+import be.garagepoort.mcioc.gui.templates.xml.style.StyleId;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TubingGui {
 
-    private boolean build;
+    private StyleId styleId;
     private final String title;
     private int size;
     private Inventory inventory;
     private final Map<Integer, TubingGuiItem> guiItems = new HashMap<>();
 
-    public TubingGui(List<TubingGuiItem> guiItems, String title, int size) {
+    public TubingGui(StyleId styleId, List<TubingGuiItem> guiItems, String title, int size) {
         this.size = size;
         this.title = title;
+        if (styleId != null) {
+            this.styleId = styleId;
+            this.styleId.setId(this.styleId.getId() + "_gui");
+        }
         for (TubingGuiItem guiItem : guiItems) {
             this.guiItems.put(guiItem.getSlot(), guiItem);
         }
     }
 
-    public void build() {
-        this.inventory = Bukkit.createInventory(null, size, title);
-        for (TubingGuiItem guiItem : guiItems.values()) {
-            inventory.setItem(guiItem.getSlot(), guiItem.getTubingGuiItemStack().toItemStack());
-        }
-        this.build = true;
+    public int getSize() {
+        return size;
+    }
+
+    public void setInventory(Inventory inventory) {
+        this.inventory = inventory;
+    }
+
+    public Inventory getInventory() {
+        return inventory;
     }
 
     public Map<Integer, TubingGuiItem> getGuiItems() {
         return guiItems;
     }
 
-    public Inventory getInventory() {
-        if (!build) {
-            build();
-        }
-        return inventory;
-    }
-
-    public StyleId getId() {
-        return new StyleId("", "inventory", Collections.emptyList());
+    public Optional<StyleId> getId() {
+        return Optional.ofNullable(styleId);
     }
 
     public Map<Integer, String> getLeftActions() {
@@ -79,12 +79,23 @@ public class TubingGui {
         this.size = size;
     }
 
+    public String getTitle() {
+        return title;
+    }
+
     public static class Builder {
+        private StyleId guiId;
         private final String title;
         private final int size;
         private final List<TubingGuiItem> guiItems = new ArrayList<>();
 
         public Builder(String title, int size) {
+            this.title = title;
+            this.size = size;
+        }
+
+        public Builder(StyleId guiId, String title, int size) {
+            this.guiId = guiId;
             this.title = title;
             this.size = size;
         }
@@ -125,15 +136,18 @@ public class TubingGui {
         }
 
         private TubingGuiItemStack mapToTubingItemStack(ItemStack itemStack) {
-            return new TubingGuiItemStack(itemStack.getType(), new TubingGuiItemText(itemStack.getItemMeta().getDisplayName(), null), false, itemStack.getItemMeta().getLore().stream().map(l -> {
-                ItemStackLoreLine itemStackLoreLine = new ItemStackLoreLine();
-                itemStackLoreLine.addPart(new TubingGuiItemText(l, null));
+            TubingGuiText name = new TubingGuiText();
+            name.addPart(new TubingGuiTextPart(itemStack.getItemMeta().getDisplayName(), null));
+
+            return new TubingGuiItemStack(itemStack.getType(), name, false, itemStack.getItemMeta().getLore().stream().map(l -> {
+                TubingGuiText itemStackLoreLine = new TubingGuiText();
+                itemStackLoreLine.addPart(new TubingGuiTextPart(l, null));
                 return itemStackLoreLine;
             }).collect(Collectors.toList()));
         }
 
         public TubingGui build() {
-            return new TubingGui(guiItems, title, size);
+            return new TubingGui(guiId, guiItems, title, size);
         }
     }
 }

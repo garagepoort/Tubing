@@ -1,4 +1,4 @@
-package be.garagepoort.mcioc.gui.templates.xml;
+package be.garagepoort.mcioc.gui.templates.xml.style;
 
 import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.gui.model.TubingGui;
@@ -19,11 +19,11 @@ public class TubingGuiStyleParser {
     }
 
     public void parse(TubingGui tubingGui) {
-        if (tubingGui.getId() == null) {
+        if (!tubingGui.getId().isPresent()) {
             return;
         }
 
-        Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGui.getId());
+        Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGui.getId().get());
         if (style.isPresent()) {
             style.get().getSize().ifPresent(tubingGui::setSize);
         }

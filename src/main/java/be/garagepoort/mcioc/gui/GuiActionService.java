@@ -3,18 +3,22 @@ package be.garagepoort.mcioc.gui;
 import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
+import be.garagepoort.mcioc.TubingPlugin;
 import be.garagepoort.mcioc.common.ITubingBukkitUtil;
 import be.garagepoort.mcioc.common.TubingPluginProvider;
 import be.garagepoort.mcioc.gui.actionquery.ActionQueryParser;
 import be.garagepoort.mcioc.gui.exceptions.GuiExceptionHandler;
+import be.garagepoort.mcioc.gui.model.InventoryMapper;
 import be.garagepoort.mcioc.gui.model.TubingChatGui;
 import be.garagepoort.mcioc.gui.model.TubingGui;
 import be.garagepoort.mcioc.gui.templates.ChatTemplate;
 import be.garagepoort.mcioc.gui.templates.ChatTemplateResolver;
 import be.garagepoort.mcioc.gui.templates.GuiTemplate;
 import be.garagepoort.mcioc.gui.templates.GuiTemplateResolver;
+import be.garagepoort.mcioc.permissions.TubingPermissionService;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -40,13 +44,17 @@ public class GuiActionService {
     private final ChatTemplateResolver chatTemplateResolver;
     private final ActionQueryParser actionQueryParser;
     private final ITubingBukkitUtil tubingBukkitUtil;
+    private final InventoryMapper inventoryMapper;
+    private final TubingPermissionService tubingPermissionService;
 
-    public GuiActionService(TubingPluginProvider tubingPluginProvider, GuiTemplateResolver guiTemplateResolver, ChatTemplateResolver chatTemplateResolver, ActionQueryParser actionQueryParser, ITubingBukkitUtil tubingBukkitUtil) {
+    public GuiActionService(TubingPluginProvider tubingPluginProvider, GuiTemplateResolver guiTemplateResolver, ChatTemplateResolver chatTemplateResolver, ActionQueryParser actionQueryParser, ITubingBukkitUtil tubingBukkitUtil, InventoryMapper inventoryMapper, TubingPermissionService tubingPermissionService) {
         this.tubingPluginProvider = tubingPluginProvider;
         this.guiTemplateResolver = guiTemplateResolver;
         this.chatTemplateResolver = chatTemplateResolver;
         this.actionQueryParser = actionQueryParser;
         this.tubingBukkitUtil = tubingBukkitUtil;
+        this.inventoryMapper = inventoryMapper;
+        this.tubingPermissionService = tubingPermissionService;
     }
 
     public void setInventory(Player player, TubingGui tubingGui) {
@@ -170,11 +178,14 @@ public class GuiActionService {
         showChat(player, chatTemplateResolver.resolve(chatTemplate.getTemplate(), chatTemplate.getParams()));
     }
 
-    public void showGui(Player player, TubingGui inventory) {
+    public void showGui(Player player, TubingGui tubingGui) {
         tubingBukkitUtil.runTaskLater(() -> {
             player.closeInventory();
-            player.openInventory(inventory.getInventory());
-            setInventory(player, inventory);
+            boolean showId = tubingPermissionService.has(player, TubingPlugin.getPlugin().getName() + ".view-gui-ids");
+            Inventory inventory = inventoryMapper.map(tubingGui, showId);
+            tubingGui.setInventory(inventory);
+            player.openInventory(inventory);
+            setInventory(player, tubingGui);
         }, 1);
     }
 

@@ -1,9 +1,8 @@
-package be.garagepoort.mcioc.gui.templates.xml;
+package be.garagepoort.mcioc.gui.templates.xml.style;
 
 import be.garagepoort.mcioc.IocBean;
-import be.garagepoort.mcioc.gui.model.ItemStackLoreLine;
 import be.garagepoort.mcioc.gui.model.TubingGuiItem;
-import be.garagepoort.mcioc.gui.model.TubingGuiItemText;
+import be.garagepoort.mcioc.gui.model.TubingGuiText;
 import be.garagepoort.mcioc.gui.style.StyleConfig;
 
 import java.util.Optional;
@@ -12,11 +11,11 @@ import java.util.Optional;
 public class TubingGuiItemStyleParser {
 
     private final StyleRepository styleRepository;
-    private final TextStyleParser textStyleParser;
+    private final TubingGuiTextStyleParser tubingGuiTextStyleParser;
 
-    public TubingGuiItemStyleParser(StyleRepository styleRepository, TextStyleParser textStyleParser) {
+    public TubingGuiItemStyleParser(StyleRepository styleRepository, TubingGuiTextStyleParser tubingGuiTextStyleParser) {
         this.styleRepository = styleRepository;
-        this.textStyleParser = textStyleParser;
+        this.tubingGuiTextStyleParser = tubingGuiTextStyleParser;
     }
 
     public void parse(TubingGuiItem tubingGuiItem) {
@@ -39,11 +38,9 @@ public class TubingGuiItemStyleParser {
                 tubingGuiItem.getTubingGuiItemStack().setMaterial(style.get().getMaterial().get());
             }
         }
-
-        for (ItemStackLoreLine loreLine : tubingGuiItem.getTubingGuiItemStack().getLoreLines()) {
-            for (TubingGuiItemText part : loreLine.getParts()) {
-                textStyleParser.parse(part);
-            }
+        tubingGuiTextStyleParser.parse(tubingGuiItem.getTubingGuiItemStack().getName());
+        for (TubingGuiText loreLine : tubingGuiItem.getTubingGuiItemStack().getLoreLines()) {
+            tubingGuiTextStyleParser.parse(loreLine);
         }
     }
 
