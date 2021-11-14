@@ -15,9 +15,10 @@ public class InventoryMapper {
 
     public Inventory map(TubingGui tubingGui, boolean showIds) {
         Inventory inventory = Bukkit.createInventory(null, tubingGui.getSize(), getId(tubingGui, showIds) + tubingGui.getTitle());
-        for (TubingGuiItem guiItem : tubingGui.getGuiItems().values()) {
-            inventory.setItem(guiItem.getSlot(), itemStackMapper.map(guiItem, showIds));
-        }
+        tubingGui.getGuiItems().values()
+                .stream()
+                .filter(guiItem -> !guiItem.isHidden())
+                .forEach(guiItem -> inventory.setItem(guiItem.getSlot(), itemStackMapper.map(guiItem, showIds)));
         return inventory;
     }
 

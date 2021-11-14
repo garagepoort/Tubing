@@ -54,7 +54,9 @@ public class TubingGui {
     public Map<Integer, String> getLeftActions() {
         Map<Integer, String> actions = new HashMap<>();
         for (TubingGuiItem guiItem : guiItems.values()) {
-            actions.put(guiItem.getSlot(), guiItem.getLeftClickAction());
+            if (!guiItem.isHidden()) {
+                actions.put(guiItem.getSlot(), guiItem.getLeftClickAction());
+            }
         }
         return actions;
     }
@@ -62,7 +64,9 @@ public class TubingGui {
     public Map<Integer, String> getRightActions() {
         Map<Integer, String> actions = new HashMap<>();
         for (TubingGuiItem guiItem : guiItems.values()) {
-            actions.put(guiItem.getSlot(), guiItem.getRightClickAction());
+            if (!guiItem.isHidden()) {
+                actions.put(guiItem.getSlot(), guiItem.getRightClickAction());
+            }
         }
         return actions;
     }
@@ -70,7 +74,9 @@ public class TubingGui {
     public Map<Integer, String> getMiddleActions() {
         Map<Integer, String> actions = new HashMap<>();
         for (TubingGuiItem guiItem : guiItems.values()) {
-            actions.put(guiItem.getSlot(), guiItem.getMiddleClickAction());
+            if (!guiItem.isHidden()) {
+                actions.put(guiItem.getSlot(), guiItem.getMiddleClickAction());
+            }
         }
         return actions;
     }
