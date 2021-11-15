@@ -11,6 +11,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 @IocBean
 public class StyleRepository {
 
+    private static final List<String> STYLE_KEYS = Arrays.asList("hidden", "slot", "material", "size", "enchanted", "color");
     private final Map<String, StyleConfig> styleIds = new HashMap<>();
     private final Map<String, StyleConfig> styleClasses = new HashMap<>();
 
@@ -36,16 +38,27 @@ public class StyleRepository {
         for (File file : Objects.requireNonNull(styleDir.listFiles())) {
             FileConfiguration fileConfiguration = loadConfiguration(file);
             String idPrefix = getFileIdPrefix(file);
-            for (String key : fileConfiguration.getKeys(false)) {
-                StyleConfig styleConfig = mapStyleConfig(fileConfiguration.getConfigurationSection(key));
-                TubingPlugin.getPlugin().getLogger().info("Registration key: " + idPrefix + key);
-                TubingPlugin.getPlugin().getLogger().info("Registering style config: " + styleConfig);
-                if (key.contains("$")) {
-                    styleClasses.put(idPrefix + key, styleConfig);
-                } else {
-                    styleIds.put(idPrefix + key, styleConfig);
-                }
-            }
+            registerStyleConfig(fileConfiguration, idPrefix);
+        }
+    }
+
+    private void registerStyleConfig(ConfigurationSection fileConfiguration, String idPrefix) {
+        StyleConfig defaultStyleConfig = mapStyleConfig(fileConfiguration);
+        registerStyleConfig(idPrefix, "", defaultStyleConfig);
+
+        List<String> validKeys = fileConfiguration.getKeys(false)
+                .stream().filter(k -> !STYLE_KEYS.contains(k)).collect(Collectors.toList());
+        for (String key : validKeys) {
+            registerStyleConfig(fileConfiguration.getConfigurationSection(key), idPrefix.isEmpty() ? key : idPrefix + "_" + key);
+        }
+    }
+
+    private void registerStyleConfig(String idPrefix, String key, StyleConfig styleConfig) {
+        String fullKey = idPrefix + key;
+        if (fullKey.contains("$")) {
+            styleClasses.put(fullKey, styleConfig);
+        } else {
+            styleIds.put(fullKey, styleConfig);
         }
     }
 
@@ -64,7 +77,7 @@ public class StyleRepository {
         if (filename.equalsIgnoreCase("style")) {
             return "";
         }
-        return filename + "_";
+        return filename;
     }
 
     public Optional<StyleConfig> getStyleConfigById(StyleId id) {
@@ -93,7 +106,8 @@ public class StyleRepository {
                 styleConfig = styleConfig.update(styleIds.get(id.getFullId()));
             }
         }
-
+        if(styleConfig != null) {
+        }
         return Optional.ofNullable(styleConfig);
     }
 

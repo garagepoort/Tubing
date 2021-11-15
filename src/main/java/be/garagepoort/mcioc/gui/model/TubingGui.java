@@ -24,9 +24,6 @@ public class TubingGui {
         this.title = title;
         if (styleId != null) {
             this.styleId = styleId;
-            if (this.styleId.getId().isPresent()) {
-                this.styleId.setId(this.styleId.getId().get() + "_gui");
-            }
         }
         for (TubingGuiItem guiItem : guiItems) {
             this.guiItems.put(guiItem.getSlot(), guiItem);

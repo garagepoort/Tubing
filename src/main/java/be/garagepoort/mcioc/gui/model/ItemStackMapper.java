@@ -9,6 +9,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @IocBean
@@ -44,7 +45,7 @@ public class ItemStackMapper {
         if (name.isHidden()) {
             itemMeta.setDisplayName(getId(tubingGuiItem, showIds));
         } else {
-            itemMeta.setDisplayName(getId(tubingGuiItem, showIds) + mapGuiText(name));
+            itemMeta.setDisplayName(getId(tubingGuiItem, showIds) + mapGuiText(name).orElse(""));
         }
         itemStack.setItemMeta(itemMeta);
     }
@@ -54,8 +55,7 @@ public class ItemStackMapper {
         List<String> original = itemMeta.getLore();
         if (original == null) original = new ArrayList<>();
         for (TubingGuiText itemStackLoreLine : lore) {
-            String formattedLoreLine = mapGuiText(itemStackLoreLine);
-            original.add(formattedLoreLine);
+            mapGuiText(itemStackLoreLine).ifPresent(original::add);
             if (showIds) {
                 List<String> idLines = mapGuiId(itemStackLoreLine);
                 original.addAll(idLines);
@@ -65,12 +65,16 @@ public class ItemStackMapper {
         itemStack.setItemMeta(itemMeta);
     }
 
-    private String mapGuiText(TubingGuiText itemStackLoreLine) {
+    private Optional<String> mapGuiText(TubingGuiText itemStackLoreLine) {
+        if (itemStackLoreLine.getParts().stream().allMatch(TubingGuiTextPart::isHidden)) {
+            return Optional.empty();
+        }
+
         String collectedParts = itemStackLoreLine.getParts().stream()
                 .filter(p -> !p.isHidden())
                 .map(TubingGuiTextPart::toString)
                 .collect(Collectors.joining());
-        return itemStackLoreLine.getColor() == null ? this.format(collectedParts) : this.format(itemStackLoreLine.getColor() + collectedParts);
+        return Optional.of(itemStackLoreLine.getColor() == null ? this.format(collectedParts) : this.format(itemStackLoreLine.getColor() + collectedParts));
     }
 
     private List<String> mapGuiId(TubingGuiText itemStackLoreLine) {
