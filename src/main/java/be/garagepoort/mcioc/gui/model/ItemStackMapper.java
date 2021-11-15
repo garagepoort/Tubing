@@ -59,6 +59,8 @@ public class ItemStackMapper {
             if (showIds) {
                 List<String> idLines = mapGuiId(itemStackLoreLine);
                 original.addAll(idLines);
+                List<String> classLines = mapGuiClasses(itemStackLoreLine);
+                original.addAll(classLines);
             }
         }
         itemMeta.setLore(original);
@@ -84,25 +86,46 @@ public class ItemStackMapper {
             if (part.getId() == null || !part.getId().getId().isPresent()) {
                 continue;
             }
-            String idText = "(" + part.getId().getId().get() + ")";
-            String line = partText + idText;
-
-            if (line.length() > LINE_LENGTH && idText.length() <= LINE_LENGTH) {
-                if (!partText.isEmpty()) {
-                    result.add(partText);
-                }
-                partText = idText;
-            } else if (line.length() > LINE_LENGTH) {
-                result.add(line);
-                partText = "";
-            } else {
-                partText = line;
-            }
+            String idText = "&C(" + part.getId().getId().get() + ")";
+            partText = parseLoreLine(result, partText, idText);
         }
         if (!partText.isEmpty()) {
-            result.add(partText);
+            result.add(format(partText));
         }
         return result;
+    }
+
+    private List<String> mapGuiClasses(TubingGuiText itemStackLoreLine) {
+        List<String> result = new ArrayList<>();
+        String partText = "";
+        for (TubingGuiTextPart part : itemStackLoreLine.getParts()) {
+            if (part.getId() == null || part.getId().getClasses().isEmpty()) {
+                continue;
+            }
+            String classText = "&2(" + String.join(",", part.getId().getClasses()) + ")";
+            partText = parseLoreLine(result, partText, classText);
+        }
+        if (!partText.isEmpty()) {
+            result.add(format(partText));
+        }
+        return result;
+    }
+
+    private String parseLoreLine(List<String> result, String partText, String classText) {
+        String line = partText + classText;
+
+        if (line.length() > LINE_LENGTH && classText.length() <= LINE_LENGTH) {
+            if (!partText.isEmpty()) {
+                result.add(partText);
+            }
+            partText = classText;
+        } else if (line.length() > LINE_LENGTH) {
+            result.add(line);
+            partText = "";
+        } else {
+            partText = line;
+        }
+        return partText;
     }
 
     private String format(String loreLine) {

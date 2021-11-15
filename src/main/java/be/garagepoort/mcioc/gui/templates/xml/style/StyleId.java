@@ -52,6 +52,10 @@ public class StyleId {
         return path.contains(selectWithoutClass) && classes.contains(className);
     }
 
+    public List<String> getClasses() {
+        return classes;
+    }
+
     public void setClasses(List<String> classes) {
         this.classes = classes;
     }

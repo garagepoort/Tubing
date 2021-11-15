@@ -163,7 +163,9 @@ public class TubingGuiXmlParser {
         TubingGuiText itemStackLoreLine = new TubingGuiText();
         itemStackLoreLine.setColor(textElement.attr(COLOR_ATTR));
         if (textElement.select(TEXT_TAG).isEmpty()) {
-            itemStackLoreLine.addPart(new TubingGuiTextPart(textElement.text(), null));
+            TubingGuiTextPart part = new TubingGuiTextPart(textElement.text(), textElement.attr(COLOR_ATTR));
+            part.setId(getId(textElement));
+            itemStackLoreLine.addPart(part);
             return itemStackLoreLine;
         }
 
