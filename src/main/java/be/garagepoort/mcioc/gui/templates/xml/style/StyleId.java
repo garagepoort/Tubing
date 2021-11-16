@@ -1,20 +1,17 @@
 package be.garagepoort.mcioc.gui.templates.xml.style;
 
-import be.garagepoort.mcioc.gui.exceptions.TubingGuiException;
-import org.apache.commons.lang.StringUtils;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class StyleId {
 
-    private final String path;
+    private final StyleId parent;
     private String id;
     private List<String> classes;
 
-    public StyleId(String path, String id, List<String> classes) {
-        this.path = path;
+    public StyleId(StyleId parent, String id, List<String> classes) {
+        this.parent = parent;
         this.id = id;
         this.classes = classes;
     }
@@ -27,29 +24,75 @@ public class StyleId {
         return Optional.ofNullable(id);
     }
 
-    public String getFullId() {
-        if (id == null) {
-            return null;
+    public boolean matchesIdSelector(String selector) {
+        int index = selector.lastIndexOf("_");
+        String last = selector;
+        if(index > -1) {
+            if(parent == null) {
+                //The selector has a parent but we do not.
+                return false;
+            }
+
+            String parentSelector = selector.substring(0, index);
+            last = selector.substring(index + 1);
+            if(last.startsWith("$")) {
+                boolean classMatched = classes.contains(last.replace("$", ""));
+                return classMatched && parent.matchesIdSelector(parentSelector);
+            }
+            return this.id != null && this.id.equals(last) && parent.matchesIdSelector(parentSelector);
+        }else {
+            if(parent != null) {
+                //we reached the end of the selector but our parent is not included
+                return false;
+            }
+
+            if(last.startsWith("$")) {
+                return classes.contains(last.replace("$", ""));
+            }
+            return this.id != null && this.id.equals(last);
         }
-        return StringUtils.isBlank(path) ? id : path + "_" + id;
     }
 
-    public boolean matchesClassSelector(String selector) {
-        if (!selector.contains("$")) {
-            throw new TubingGuiException("No class selector: [" + selector + "]");
+    public boolean matchesClass(String selector) {
+        int index = selector.lastIndexOf("_");
+        String last = selector;
+        if(index > -1) {
+            String parentSelector = selector.substring(0, index);
+            last = selector.substring(index + 1);
+            if(!last.startsWith("$") || !classes.contains(last.replace("$", ""))) {
+                return false;
+            }
+            if(parent == null) {
+                //The selector has a parent but we do not.
+                return false;
+            }
+            return parent.matchesClassSelector(parentSelector);
         }
-        if (selector.startsWith("$")) {
-            return classes.contains(selector.replace("$", ""));
-        }
+        return last.startsWith("$") && classes.contains(last.replace("$", ""));
+    }
 
-        String[] split = selector.split("_\\$");
-        if (split.length != 2) {
-            throw new TubingGuiException("Invalid class selector: [" + selector + "]");
-        }
-        String selectWithoutClass = split[0];
-        String className = split[1];
+    private boolean matchesClassSelector(String selector) {
+        int index = selector.lastIndexOf("_");
+        String last = selector;
+        if(index > -1) {
+            if(parent == null) {
+                //The selector has a parent but we do not.
+                return false;
+            }
 
-        return path.contains(selectWithoutClass) && classes.contains(className);
+            String parentSelector = selector.substring(0, index);
+            last = selector.substring(index + 1);
+            if(last.startsWith("$")) {
+                boolean classMatched = classes.contains(last.replace("$", ""));
+                return (classMatched && parent.matchesClassSelector(parentSelector)) || parent.matchesClassSelector(selector);
+            }
+            return (this.id != null && this.id.equals(last) && parent.matchesClassSelector(parentSelector)) || parent.matchesClassSelector(selector);
+        }else {
+            if(last.startsWith("$")) {
+                return classes.contains(last.replace("$", ""));
+            }
+            return (this.id != null && this.id.equals(last)) || (this.parent != null && parent.matchesClassSelector(last));
+        }
     }
 
     public List<String> getClasses() {
@@ -63,7 +106,7 @@ public class StyleId {
     @Override
     public String toString() {
         return "StyleId{" +
-                "path='" + path + '\'' +
+                "path='" + parent + '\'' +
                 ", id='" + id + '\'' +
                 ", classes=" + classes.stream().collect(Collectors.joining(",")) +
                 '}';

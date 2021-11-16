@@ -9,13 +9,17 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @IocBean
 public class ItemStackMapper {
 
     public static final int LINE_LENGTH = 50;
+
+    private final TextMapper textMapper;
+
+    public ItemStackMapper(TextMapper textMapper) {
+        this.textMapper = textMapper;
+    }
 
     public ItemStack map(TubingGuiItem tubingGuiItem, boolean showIds) {
         TubingGuiItemStack tubingGuiItemStack = tubingGuiItem.getTubingGuiItemStack();
@@ -45,7 +49,7 @@ public class ItemStackMapper {
         if (name.isHidden()) {
             itemMeta.setDisplayName(getId(tubingGuiItem, showIds));
         } else {
-            itemMeta.setDisplayName(getId(tubingGuiItem, showIds) + mapGuiText(name).orElse(""));
+            itemMeta.setDisplayName(getId(tubingGuiItem, showIds) + textMapper.mapText(name).orElse(""));
         }
         itemStack.setItemMeta(itemMeta);
     }
@@ -55,7 +59,7 @@ public class ItemStackMapper {
         List<String> original = itemMeta.getLore();
         if (original == null) original = new ArrayList<>();
         for (TubingGuiText itemStackLoreLine : lore) {
-            mapGuiText(itemStackLoreLine).ifPresent(original::add);
+            textMapper.mapText(itemStackLoreLine).ifPresent(original::add);
             if (showIds) {
                 List<String> idLines = mapGuiId(itemStackLoreLine);
                 original.addAll(idLines);
@@ -65,18 +69,6 @@ public class ItemStackMapper {
         }
         itemMeta.setLore(original);
         itemStack.setItemMeta(itemMeta);
-    }
-
-    private Optional<String> mapGuiText(TubingGuiText itemStackLoreLine) {
-        if (itemStackLoreLine.getParts().stream().allMatch(TubingGuiTextPart::isHidden)) {
-            return Optional.empty();
-        }
-
-        String collectedParts = itemStackLoreLine.getParts().stream()
-                .filter(p -> !p.isHidden())
-                .map(TubingGuiTextPart::toString)
-                .collect(Collectors.joining());
-        return Optional.of(itemStackLoreLine.getColor() == null ? this.format(collectedParts) : this.format(itemStackLoreLine.getColor() + collectedParts));
     }
 
     private List<String> mapGuiId(TubingGuiText itemStackLoreLine) {
@@ -116,11 +108,11 @@ public class ItemStackMapper {
 
         if (line.length() > LINE_LENGTH && classText.length() <= LINE_LENGTH) {
             if (!partText.isEmpty()) {
-                result.add(partText);
+                result.add(format(partText));
             }
             partText = classText;
         } else if (line.length() > LINE_LENGTH) {
-            result.add(line);
+            result.add(format(line));
             partText = "";
         } else {
             partText = line;

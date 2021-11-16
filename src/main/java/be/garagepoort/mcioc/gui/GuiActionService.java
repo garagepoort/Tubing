@@ -3,7 +3,6 @@ package be.garagepoort.mcioc.gui;
 import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
-import be.garagepoort.mcioc.TubingPlugin;
 import be.garagepoort.mcioc.common.ITubingBukkitUtil;
 import be.garagepoort.mcioc.common.TubingPluginProvider;
 import be.garagepoort.mcioc.gui.actionquery.ActionQueryParser;
@@ -11,11 +10,11 @@ import be.garagepoort.mcioc.gui.exceptions.GuiExceptionHandler;
 import be.garagepoort.mcioc.gui.model.InventoryMapper;
 import be.garagepoort.mcioc.gui.model.TubingChatGui;
 import be.garagepoort.mcioc.gui.model.TubingGui;
+import be.garagepoort.mcioc.gui.style.TubingGuiStyleIdViewProvider;
 import be.garagepoort.mcioc.gui.templates.ChatTemplate;
 import be.garagepoort.mcioc.gui.templates.ChatTemplateResolver;
 import be.garagepoort.mcioc.gui.templates.GuiTemplate;
 import be.garagepoort.mcioc.gui.templates.GuiTemplateResolver;
-import be.garagepoort.mcioc.permissions.TubingPermissionService;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -45,16 +44,22 @@ public class GuiActionService {
     private final ActionQueryParser actionQueryParser;
     private final ITubingBukkitUtil tubingBukkitUtil;
     private final InventoryMapper inventoryMapper;
-    private final TubingPermissionService tubingPermissionService;
+    private final TubingGuiStyleIdViewProvider tubingGuiStyleIdViewProvider;
 
-    public GuiActionService(TubingPluginProvider tubingPluginProvider, GuiTemplateResolver guiTemplateResolver, ChatTemplateResolver chatTemplateResolver, ActionQueryParser actionQueryParser, ITubingBukkitUtil tubingBukkitUtil, InventoryMapper inventoryMapper, TubingPermissionService tubingPermissionService) {
+    public GuiActionService(TubingPluginProvider tubingPluginProvider,
+                            GuiTemplateResolver guiTemplateResolver,
+                            ChatTemplateResolver chatTemplateResolver,
+                            ActionQueryParser actionQueryParser,
+                            ITubingBukkitUtil tubingBukkitUtil,
+                            InventoryMapper inventoryMapper,
+                            TubingGuiStyleIdViewProvider tubingGuiStyleIdViewProvider) {
         this.tubingPluginProvider = tubingPluginProvider;
         this.guiTemplateResolver = guiTemplateResolver;
         this.chatTemplateResolver = chatTemplateResolver;
         this.actionQueryParser = actionQueryParser;
         this.tubingBukkitUtil = tubingBukkitUtil;
         this.inventoryMapper = inventoryMapper;
-        this.tubingPermissionService = tubingPermissionService;
+        this.tubingGuiStyleIdViewProvider = tubingGuiStyleIdViewProvider;
     }
 
     public void setInventory(Player player, TubingGui tubingGui) {
@@ -181,7 +186,7 @@ public class GuiActionService {
     public void showGui(Player player, TubingGui tubingGui) {
         tubingBukkitUtil.runTaskLater(() -> {
             player.closeInventory();
-            boolean showId = tubingPermissionService.has(player, TubingPlugin.getPlugin().getName() + ".view-gui-ids");
+            boolean showId = tubingGuiStyleIdViewProvider.canView(player);
             Inventory inventory = inventoryMapper.map(tubingGui, showId);
             tubingGui.setInventory(inventory);
             player.openInventory(inventory);

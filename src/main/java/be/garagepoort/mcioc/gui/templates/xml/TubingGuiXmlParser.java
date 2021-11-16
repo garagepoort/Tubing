@@ -58,9 +58,10 @@ public class TubingGuiXmlParser {
 
         int size = StringUtils.isBlank(tubingGuiElement.attr("size")) ? 54 : Integer.parseInt(tubingGuiElement.attr("size"));
         Element titleElement = tubingGuiElement.selectFirst("title");
-        StyleId guiId = getId(tubingGuiElement);
-        String title = titleElement == null ? "" : titleElement.text();
-        TubingGui.Builder builder = new TubingGui.Builder(guiId, format(title), size);
+        TubingGuiText titleGuiText = parseTextElement(titleElement);
+
+        StyleId guiId = getId(tubingGuiElement, true);
+        TubingGui.Builder builder = new TubingGui.Builder(guiId, titleGuiText, size);
 
         Elements guiItems = tubingGuiElement.select("GuiItem");
         for (Element guiItem : guiItems) {
@@ -68,7 +69,7 @@ public class TubingGuiXmlParser {
                 String leftClickAction = guiItem.attr(ON_LEFT_CLICK_ATTR);
                 String rightClickAction = guiItem.attr(ON_RIGHT_CLICK_ATTR);
                 String middleClickAction = guiItem.attr(ON_MIDDLE_CLICK_ATTR);
-                StyleId guiItemId = getId(guiItem);
+                StyleId guiItemId = getId(guiItem, true);
 
                 int slot = Integer.parseInt(guiItem.attr(SLOT_ATTR));
                 String material = guiItem.attr(MATERIAL_ATTR);
@@ -107,39 +108,33 @@ public class TubingGuiXmlParser {
         return tubingGuiText;
     }
 
-    private StyleId getId(Element element) {
-        if (!element.hasAttr(CLASS_ATTR) && !element.hasAttr(ID_ATTR)) {
+    private StyleId getId(Element element, boolean skipIfNoId) {
+        if (!hasStyleId(element) && skipIfNoId) {
             return null;
+        } else if (!hasStyleId(element) && element.hasParent()) {
+            return getId(element.parent(), false);
+        } else if (hasStyleId(element)) {
+            StyleId parentId = element.hasParent() ? getId(element.parent(), false) : null;
+            return buildStyleConfig(element, parentId);
         }
+        return null;
+    }
 
-        String path = element.hasParent() ? getPath(element.parent()) : "";
+    private boolean hasStyleId(Element element) {
+        return element.hasAttr(CLASS_ATTR) || element.hasAttr(ID_ATTR);
+    }
 
+    private StyleId buildStyleConfig(Element element, StyleId parentId) {
         List<String> classes = new ArrayList<>();
         if (element.hasAttr(CLASS_ATTR)) {
             classes = Arrays.asList(element.attr(CLASS_ATTR).split(" "));
         }
 
         if (element.hasAttr(ID_ATTR)) {
-            return new StyleId(path, element.attr("id"), classes);
+            return new StyleId(parentId, element.attr("id"), classes);
         } else {
-            return new StyleId(path, null, classes);
+            return new StyleId(parentId, null, classes);
         }
-    }
-
-    private String getPath(Element element) {
-        if (!element.hasParent()) {
-            return element.attr("id");
-        }
-        String parentPath = getPath(element.parent());
-        if (element.hasAttr(ID_ATTR)) {
-            if (StringUtils.isBlank(parentPath)) {
-                return element.attr("id");
-            } else {
-                return parentPath + "_" + element.attr("id");
-
-            }
-        }
-        return parentPath;
     }
 
     private List<TubingGuiText> parseLoreLines(Player player, Element guiItem) {
@@ -160,18 +155,22 @@ public class TubingGuiXmlParser {
     }
 
     private TubingGuiText parseTextElement(Element textElement) {
+        if (textElement == null) {
+            return new TubingGuiText();
+        }
+
         TubingGuiText itemStackLoreLine = new TubingGuiText();
         itemStackLoreLine.setColor(textElement.attr(COLOR_ATTR));
         if (textElement.select(TEXT_TAG).isEmpty()) {
             TubingGuiTextPart part = new TubingGuiTextPart(textElement.text(), textElement.attr(COLOR_ATTR));
-            part.setId(getId(textElement));
+            part.setId(getId(textElement, true));
             itemStackLoreLine.addPart(part);
             return itemStackLoreLine;
         }
 
         for (Element textPart : textElement.select(TEXT_TAG)) {
             TubingGuiTextPart tubingGuiTextPart = new TubingGuiTextPart(textPart.wholeText(), textPart.attr(COLOR_ATTR));
-            tubingGuiTextPart.setId(getId(textPart));
+            tubingGuiTextPart.setId(getId(textPart, true));
             itemStackLoreLine.addPart(tubingGuiTextPart);
         }
         return itemStackLoreLine;

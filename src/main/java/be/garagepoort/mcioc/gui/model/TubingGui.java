@@ -14,12 +14,12 @@ import java.util.stream.Collectors;
 public class TubingGui {
 
     private StyleId styleId;
-    private final String title;
+    private final TubingGuiText title;
     private int size;
     private Inventory inventory;
     private final Map<Integer, TubingGuiItem> guiItems = new HashMap<>();
 
-    public TubingGui(StyleId styleId, List<TubingGuiItem> guiItems, String title, int size) {
+    public TubingGui(StyleId styleId, List<TubingGuiItem> guiItems, TubingGuiText title, int size) {
         this.size = size;
         this.title = title;
         if (styleId != null) {
@@ -84,24 +84,38 @@ public class TubingGui {
         this.size = size;
     }
 
-    public String getTitle() {
+    public TubingGuiText getTitle() {
         return title;
     }
 
     public static class Builder {
         private StyleId guiId;
-        private final String title;
+        private final TubingGuiText title;
         private final int size;
         private final List<TubingGuiItem> guiItems = new ArrayList<>();
 
         public Builder(String title, int size) {
+            TubingGuiText tubingGuiText = new TubingGuiText();
+            tubingGuiText.addPart(new TubingGuiTextPart(title, null));
+            this.title = tubingGuiText;
+            this.size = size;
+        }
+        public Builder(TubingGuiText title, int size) {
+            this.title = title;
+            this.size = size;
+        }
+
+        public Builder(StyleId guiId, TubingGuiText title, int size) {
+            this.guiId = guiId;
             this.title = title;
             this.size = size;
         }
 
         public Builder(StyleId guiId, String title, int size) {
+            TubingGuiText tubingGuiText = new TubingGuiText();
+            tubingGuiText.addPart(new TubingGuiTextPart(title, null));
+            this.title = tubingGuiText;
             this.guiId = guiId;
-            this.title = title;
             this.size = size;
         }
 

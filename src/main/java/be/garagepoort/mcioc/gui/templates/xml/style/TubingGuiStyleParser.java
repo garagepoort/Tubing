@@ -12,10 +12,12 @@ public class TubingGuiStyleParser {
 
     private final StyleRepository styleRepository;
     private final TubingGuiItemStyleParser tubingGuiItemStyleParser;
+    private final TubingGuiTextStyleParser tubingGuiTextStyleParser;
 
-    public TubingGuiStyleParser(StyleRepository styleRepository, TubingGuiItemStyleParser tubingGuiItemStyleParser) {
+    public TubingGuiStyleParser(StyleRepository styleRepository, TubingGuiItemStyleParser tubingGuiItemStyleParser, TubingGuiTextStyleParser tubingGuiTextStyleParser) {
         this.styleRepository = styleRepository;
         this.tubingGuiItemStyleParser = tubingGuiItemStyleParser;
+        this.tubingGuiTextStyleParser = tubingGuiTextStyleParser;
     }
 
     public void parse(TubingGui tubingGui) {
@@ -23,6 +25,8 @@ public class TubingGuiStyleParser {
             Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGui.getId().get());
             style.ifPresent(styleConfig -> styleConfig.getSize().ifPresent(tubingGui::setSize));
         }
+
+        tubingGuiTextStyleParser.parse(tubingGui.getTitle());
 
         for (TubingGuiItem value : tubingGui.getGuiItems().values()) {
             tubingGuiItemStyleParser.parse(value);

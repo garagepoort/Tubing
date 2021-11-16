@@ -8,13 +8,15 @@ import org.bukkit.inventory.Inventory;
 public class InventoryMapper {
 
     private final ItemStackMapper itemStackMapper;
+    private final TextMapper textMapper;
 
-    public InventoryMapper(ItemStackMapper itemStackMapper) {
+    public InventoryMapper(ItemStackMapper itemStackMapper, TextMapper textMapper) {
         this.itemStackMapper = itemStackMapper;
+        this.textMapper = textMapper;
     }
 
     public Inventory map(TubingGui tubingGui, boolean showIds) {
-        Inventory inventory = Bukkit.createInventory(null, tubingGui.getSize(), getId(tubingGui, showIds) + tubingGui.getTitle());
+        Inventory inventory = Bukkit.createInventory(null, tubingGui.getSize(), getId(tubingGui, showIds) + textMapper.mapText(tubingGui.getTitle()).orElse(""));
         tubingGui.getGuiItems().values()
                 .stream()
                 .filter(guiItem -> !guiItem.isHidden())
@@ -26,6 +28,6 @@ public class InventoryMapper {
         if (!showIds || !tubingGui.getId().isPresent()) {
             return "";
         }
-        return "(" + tubingGui.getId().get().getFullId().split("_")[0] + ") ";
+        return "(" + tubingGui.getId().get().getId().orElse("No ID") + ") ";
     }
 }

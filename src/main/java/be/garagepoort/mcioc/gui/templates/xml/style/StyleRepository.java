@@ -36,6 +36,9 @@ public class StyleRepository {
         }
 
         for (File file : Objects.requireNonNull(styleDir.listFiles())) {
+            if (file.isDirectory()) {
+                continue;
+            }
             FileConfiguration fileConfiguration = loadConfiguration(file);
             String idPrefix = getFileIdPrefix(file);
             registerStyleConfig(fileConfiguration, idPrefix);
@@ -55,7 +58,8 @@ public class StyleRepository {
 
     private void registerStyleConfig(String idPrefix, String key, StyleConfig styleConfig) {
         String fullKey = idPrefix + key;
-        if (fullKey.contains("$")) {
+        String[] endSelector = fullKey.split("_");
+        if (endSelector[endSelector.length-1].startsWith("$") ) {
             styleClasses.put(fullKey, styleConfig);
         } else {
             styleIds.put(fullKey, styleConfig);
@@ -86,7 +90,7 @@ public class StyleRepository {
         }
 
         List<String> matchingClasses = styleClasses.keySet().stream()
-                .filter(id::matchesClassSelector)
+                .filter(id::matchesClass)
                 .sorted(Comparator.comparingInt(c -> c.split("_").length))
                 .collect(Collectors.toList());
 
@@ -99,14 +103,15 @@ public class StyleRepository {
             }
         }
 
-        if (id.getFullId() != null && styleIds.containsKey(id.getFullId())) {
+        Optional<String> matchingId = styleIds.keySet().stream()
+                .filter(id::matchesIdSelector)
+                .findFirst();
+        if(matchingId.isPresent()) {
             if (styleConfig == null) {
-                styleConfig = styleIds.get(id.getFullId());
+                styleConfig = styleIds.get(matchingId.get());
             } else {
-                styleConfig = styleConfig.update(styleIds.get(id.getFullId()));
+                styleConfig = styleConfig.update(styleIds.get(matchingId.get()));
             }
-        }
-        if(styleConfig != null) {
         }
         return Optional.ofNullable(styleConfig);
     }
