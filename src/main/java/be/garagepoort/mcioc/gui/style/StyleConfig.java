@@ -13,7 +13,7 @@ public class StyleConfig {
     private Integer slot;
     private Integer size;
 
-    public StyleConfig(String color, Material material, boolean hidden, Boolean enchanted, Integer slot, Integer size) {
+    public StyleConfig(String color, Material material, Boolean hidden, Boolean enchanted, Integer slot, Integer size) {
         this.color = color;
         this.material = material;
         this.hidden = hidden;
@@ -39,7 +39,7 @@ public class StyleConfig {
     }
 
     public Optional<Boolean> isHidden() {
-        return Optional.of(hidden);
+        return Optional.ofNullable(hidden);
     }
 
     public Optional<Integer> getSlot() {

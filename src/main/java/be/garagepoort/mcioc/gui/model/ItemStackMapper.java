@@ -49,7 +49,7 @@ public class ItemStackMapper {
         if (name.isHidden()) {
             itemMeta.setDisplayName(getId(tubingGuiItem, showIds));
         } else {
-            itemMeta.setDisplayName(getId(tubingGuiItem, showIds) + textMapper.mapText(name).orElse(""));
+            itemMeta.setDisplayName(getId(tubingGuiItem, showIds) + getClasses(tubingGuiItem, showIds) + textMapper.mapText(name).orElse(""));
         }
         itemStack.setItemMeta(itemMeta);
     }
@@ -128,6 +128,14 @@ public class ItemStackMapper {
         if (!showIds || !tubingGui.getStyleId().isPresent() || !tubingGui.getStyleId().get().getId().isPresent()) {
             return "";
         }
-        return "(" + tubingGui.getStyleId().get().getId().get().split("_")[0] + ") ";
+        return format("&C(" + tubingGui.getStyleId().get().getId().get().split("_")[0] + ") ");
     }
+
+    private String getClasses(TubingGuiItem tubingGui, boolean showIds) {
+        if (!showIds || !tubingGui.getStyleId().isPresent() || tubingGui.getStyleId().get().getClasses().isEmpty()) {
+            return "";
+        }
+        return format("&2(" + String.join(",", tubingGui.getStyleId().get().getClasses()) + ") ");
+    }
+
 }

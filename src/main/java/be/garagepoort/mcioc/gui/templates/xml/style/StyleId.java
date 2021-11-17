@@ -53,25 +53,7 @@ public class StyleId {
         }
     }
 
-    public boolean matchesClass(String selector) {
-        int index = selector.lastIndexOf("_");
-        String last = selector;
-        if(index > -1) {
-            String parentSelector = selector.substring(0, index);
-            last = selector.substring(index + 1);
-            if(!last.startsWith("$") || !classes.contains(last.replace("$", ""))) {
-                return false;
-            }
-            if(parent == null) {
-                //The selector has a parent but we do not.
-                return false;
-            }
-            return parent.matchesClassSelector(parentSelector);
-        }
-        return last.startsWith("$") && classes.contains(last.replace("$", ""));
-    }
-
-    private boolean matchesClassSelector(String selector) {
+    public boolean matchesClassSelector(String selector) {
         int index = selector.lastIndexOf("_");
         String last = selector;
         if(index > -1) {

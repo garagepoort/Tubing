@@ -40,26 +40,25 @@ public class StyleRepository {
                 continue;
             }
             FileConfiguration fileConfiguration = loadConfiguration(file);
-            String idPrefix = getFileIdPrefix(file);
-            registerStyleConfig(fileConfiguration, idPrefix);
+            registerStyleConfig(fileConfiguration, "");
         }
     }
 
-    private void registerStyleConfig(ConfigurationSection fileConfiguration, String idPrefix) {
+    private void registerStyleConfig(ConfigurationSection fileConfiguration, String parentKey) {
         StyleConfig defaultStyleConfig = mapStyleConfig(fileConfiguration);
-        registerStyleConfig(idPrefix, "", defaultStyleConfig);
+        registerStyleConfig(parentKey, "", defaultStyleConfig);
 
         List<String> validKeys = fileConfiguration.getKeys(false)
                 .stream().filter(k -> !STYLE_KEYS.contains(k)).collect(Collectors.toList());
         for (String key : validKeys) {
-            registerStyleConfig(fileConfiguration.getConfigurationSection(key), idPrefix.isEmpty() ? key : idPrefix + "_" + key);
+            registerStyleConfig(fileConfiguration.getConfigurationSection(key), parentKey.isEmpty() ? key : parentKey + "_" + key);
         }
     }
 
     private void registerStyleConfig(String idPrefix, String key, StyleConfig styleConfig) {
         String fullKey = idPrefix + key;
         String[] endSelector = fullKey.split("_");
-        if (endSelector[endSelector.length-1].startsWith("$") ) {
+        if (fullKey.startsWith("$") || endSelector[endSelector.length - 1].startsWith("$")) {
             styleClasses.put(fullKey, styleConfig);
         } else {
             styleIds.put(fullKey, styleConfig);
@@ -68,20 +67,12 @@ public class StyleRepository {
 
     private StyleConfig mapStyleConfig(ConfigurationSection section) {
         return new StyleConfig(
-                section.getString("color"),
+                section.contains("color") ? section.getString("color") : null,
                 section.contains("material") ? Material.valueOf(section.getString("material")) : null,
-                section.getBoolean("hidden"),
-                section.getBoolean("enchanted"),
+                section.contains("hidden") ? section.getBoolean("hidden") : null,
+                section.contains("enchanted") ? section.getBoolean("enchanted") : null,
                 section.contains("slot") ? section.getInt("slot") : null,
                 section.contains("size") ? section.getInt("size") : null);
-    }
-
-    private String getFileIdPrefix(File file) {
-        String filename = file.getName().substring(0, file.getName().lastIndexOf('.'));
-        if (filename.equalsIgnoreCase("style")) {
-            return "";
-        }
-        return filename;
     }
 
     public Optional<StyleConfig> getStyleConfigById(StyleId id) {
@@ -90,7 +81,7 @@ public class StyleRepository {
         }
 
         List<String> matchingClasses = styleClasses.keySet().stream()
-                .filter(id::matchesClass)
+                .filter(id::matchesClassSelector)
                 .sorted(Comparator.comparingInt(c -> c.split("_").length))
                 .collect(Collectors.toList());
 
@@ -106,7 +97,7 @@ public class StyleRepository {
         Optional<String> matchingId = styleIds.keySet().stream()
                 .filter(id::matchesIdSelector)
                 .findFirst();
-        if(matchingId.isPresent()) {
+        if (matchingId.isPresent()) {
             if (styleConfig == null) {
                 styleConfig = styleIds.get(matchingId.get());
             } else {
