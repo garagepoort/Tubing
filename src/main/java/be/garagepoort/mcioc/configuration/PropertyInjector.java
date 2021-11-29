@@ -35,6 +35,7 @@ public class PropertyInjector {
                     ConfigTransformer configTransformer = f.getAnnotation(ConfigTransformer.class);
                     Constructor<?> declaredConstructor = configTransformer.value().getDeclaredConstructors()[0];
                     IConfigTransformer iConfigTransformer = (IConfigTransformer) declaredConstructor.newInstance();
+                    setProperties(configs, iConfigTransformer);
                     f.setAccessible(true);
                     f.set(o, iConfigTransformer.mapConfig(configValue.get()));
                 } else {
