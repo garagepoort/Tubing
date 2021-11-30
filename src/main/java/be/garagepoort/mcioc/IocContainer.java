@@ -221,6 +221,9 @@ public class IocContainer {
         if (!aClass.isAnnotationPresent(IocBean.class) && providers.stream().map(Method::getReturnType).noneMatch(a -> a == aClass)) {
             throw new IocException("Cannot instantiate bean. No IocBean annotation present. [" + aClass.getName() + "]");
         }
+        if (!validBeans.contains(aClass)) {
+            throw new IocException("Cannot instantiate bean. No bean found for : [" + aClass + "]");
+        }
 
         Constructor<?>[] declaredConstructors = aClass.getDeclaredConstructors();
         if (declaredConstructors.length > 1) {
