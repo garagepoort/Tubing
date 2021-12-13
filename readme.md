@@ -8,19 +8,18 @@ It has limited features, but in my opinion contains everything you need for buil
 
 Add maven dependency
 ```
-  <repositories>
-      <repository>
-          <id>staffplusplus-repo</id>
-          <name>staffplusplus-repo</name>
-          <url>https://repo.repsy.io/mvn/garagepoort/staffplusplus</url>
-      </repository>
+    <repositories>
+        <repository>
+            <id>staffplusplus-repo</id>
+            <url>https://nexus.staffplusplus.org/repository/staffplusplus/</url>
+        </repository>
     </repositories>
     ...
     <dependencies>
       <dependency>
           <groupId>be.garagepoort.mcioc</groupId>
           <artifactId>tubing</artifactId>
-          <version>2.1.0</version>
+          <version>4.0.4</version>
       </dependency>
     <dependencies>
 ```
