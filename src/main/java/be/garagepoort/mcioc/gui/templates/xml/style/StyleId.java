@@ -1,5 +1,7 @@
 package be.garagepoort.mcioc.gui.templates.xml.style;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -12,8 +14,8 @@ public class StyleId {
 
     public StyleId(StyleId parent, String id, List<String> classes) {
         this.parent = parent;
-        this.id = id;
-        this.classes = classes;
+        this.id = StringUtils.isNotBlank(id) ? id : null;
+        this.classes = classes.stream().filter(StringUtils::isNotBlank).collect(Collectors.toList());
     }
 
     public void setId(String id) {
