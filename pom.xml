@@ -131,10 +131,6 @@
                                     <shadedPattern>be.garagepoort.mcioc.org.reflections</shadedPattern>
                                 </relocation>
                                 <relocation>
-                                    <pattern>org.slf4j</pattern>
-                                    <shadedPattern>be.garagepoort.mcioc.org.slf4j</shadedPattern>
-                                </relocation>
-                                <relocation>
                                     <pattern>javassist.</pattern>
                                     <shadedPattern>be.garagepoort.mcioc.javassist.</shadedPattern>
                                 </relocation>
