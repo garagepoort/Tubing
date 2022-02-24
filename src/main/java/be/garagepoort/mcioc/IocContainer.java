@@ -154,12 +154,14 @@ public class IocContainer {
         }
 
         if (aClass.isAnnotationPresent(IocMultiProvider.class)) {
-            Class multiClass = aClass.getAnnotation(IocMultiProvider.class).value();
-            beans.putIfAbsent(multiClass, new ArrayList<>());
-            List list = (List) beans.get(multiClass);
+            Class[] multiClasses = aClass.getAnnotation(IocMultiProvider.class).value();
             Object bean = createBean(reflections, aClass, validBeans, providedBeans, multiProviders);
-            if (!list.contains(bean) && bean != null) {
-                list.add(bean);
+            for (Class multiClass : multiClasses) {
+                beans.putIfAbsent(multiClass, new ArrayList<>());
+                List list = (List) beans.get(multiClass);
+                if (!list.contains(bean) && bean != null) {
+                    list.add(bean);
+                }
             }
             return bean;
         }
