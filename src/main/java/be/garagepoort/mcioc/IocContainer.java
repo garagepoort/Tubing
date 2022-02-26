@@ -261,7 +261,11 @@ public class IocContainer {
     }
 
     private Collection<Object> getMultiProvidedBeans(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, List<Method> providers, List<Method> multiProviders) throws InvocationTargetException, IllegalAccessException {
-        Optional<Method> beanProvider = multiProviders.stream().filter(p -> p.getAnnotation(IocMultiProvider.class).value().equals(aClass)).findFirst();
+        Optional<Method> beanProvider = multiProviders.stream().filter(p -> {
+            Class[] multiProvidedClasses = p.getAnnotation(IocMultiProvider.class).value();
+            return Arrays.asList(multiProvidedClasses).contains(aClass);
+        }).findFirst();
+
         if (beanProvider.isPresent()) {
             List<Object> params = buildParams(reflections, validBeans, providers, multiProviders, beanProvider.get().getParameterTypes(), beanProvider.get().getParameterAnnotations());
             Collection invoke = (Collection) beanProvider.get().invoke(null, params.toArray());
