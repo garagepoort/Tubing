@@ -31,7 +31,7 @@ public class ActionQueryParser {
             if (paramAnnotation.isPresent()) {
                 GuiParam param = (GuiParam) paramAnnotation.get();
                 if (paramMap.containsKey(param.value())) {
-                    methodParams[i] = toObject(parameterTypes[i], URLDecoder.decode(paramMap.get(param.value())));
+                    methodParams[i] = toObject(parameterTypes[i], paramMap.get(param.value()));
                 } else if (StringUtils.isNotBlank(param.defaultValue())) {
                     methodParams[i] = toObject(parameterTypes[i], param.defaultValue());
                 }

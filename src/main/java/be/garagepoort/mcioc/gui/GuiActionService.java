@@ -22,7 +22,6 @@ import org.bukkit.inventory.Inventory;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -212,7 +211,7 @@ public class GuiActionService {
             if (paramAnnotation.isPresent()) {
                 GuiParam param = (GuiParam) paramAnnotation.get();
                 if (paramMap.containsKey(param.value())) {
-                    methodParams.put(param.value(), toObject(parameterTypes[i], URLDecoder.decode(paramMap.get(param.value()))));
+                    methodParams.put(param.value(), toObject(parameterTypes[i], paramMap.get(param.value())));
                 } else if (StringUtils.isNotBlank(param.defaultValue())) {
                     methodParams.put(param.value(), toObject(parameterTypes[i], param.defaultValue()));
                 }
@@ -222,7 +221,7 @@ public class GuiActionService {
         methodParams.put("currentAction", actionQuery);
         paramMap.forEach((k, v) -> {
             if (!methodParams.containsKey(k)) {
-                methodParams.put(k, URLDecoder.decode(v));
+                methodParams.put(k, v);
             }
         });
         return methodParams;
