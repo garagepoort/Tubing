@@ -93,8 +93,11 @@ public abstract class TubingPlugin extends JavaPlugin {
     }
 
     private boolean loadConfig() {
-        saveDefaultConfig();
         configurationFiles = getConfigurationFiles();
+        if(configurationFiles.isEmpty()) {
+            return true;
+        }
+        saveDefaultConfig();
         AutoUpdater.runMigrations(configurationFiles, getConfigurationMigrators());
         for (ConfigurationFile c : configurationFiles) {
             if (!AutoUpdater.updateConfig(c)) {
