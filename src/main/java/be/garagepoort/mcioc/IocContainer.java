@@ -1,5 +1,8 @@
 package be.garagepoort.mcioc;
 
+import be.garagepoort.mcioc.configuration.ConfigProperty;
+import be.garagepoort.mcioc.configuration.ConfigTransformer;
+import be.garagepoort.mcioc.configuration.PropertyInjector;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -60,14 +63,14 @@ public class IocContainer {
             List<Method> multiProviders = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocMultiProvider.class).stream()).collect(Collectors.toList());
 
             List<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
-                    .filter(a -> iocConditionalPropertyFilter.isValidBean(a, configs))
-                    .filter(iocConditionalFilter::isValidBean)
-                    .sorted((o1, o2) -> {
-                        IocBean annotation1 = o1.getAnnotation(IocBean.class);
-                        IocBean annotation2 = o2.getAnnotation(IocBean.class);
-                        return Boolean.compare(annotation2.priority(), annotation1.priority());
-                    })
-                    .collect(Collectors.toList());
+                .filter(a -> iocConditionalPropertyFilter.isValidBean(a, configs))
+                .filter(iocConditionalFilter::isValidBean)
+                .sorted((o1, o2) -> {
+                    IocBean annotation1 = o1.getAnnotation(IocBean.class);
+                    IocBean annotation2 = o2.getAnnotation(IocBean.class);
+                    return Boolean.compare(annotation2.priority(), annotation1.priority());
+                })
+                .collect(Collectors.toList());
 
             Set<Class<?>> providedBeans = providers.stream().map(Method::getReturnType).collect(Collectors.toCollection(LinkedHashSet::new));
             Set<Class<?>> validBeans = Stream.concat(typesAnnotatedWith.stream(), providedBeans.stream()).collect(Collectors.toCollection(LinkedHashSet::new));
@@ -115,7 +118,6 @@ public class IocContainer {
             Bukkit.getPluginManager().registerEvents(bean, javaPlugin);
         }
     }
-
 
     private void loadMessageListenerBeans(JavaPlugin javaPlugin) {
         Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocMessageListener.class);
@@ -183,16 +185,16 @@ public class IocContainer {
 
             // Find only implementation of interface and instantiate
             Set<Class<?>> subTypes = reflections.getSubTypesOf((Class<Object>) aClass).stream()
-                    .filter(validBeans::contains)
-                    .collect(Collectors.toSet());
+                .filter(validBeans::contains)
+                .collect(Collectors.toSet());
 
             Set<Class<?>> subtypeNonConditional = subTypes.stream()
-                    .filter(a -> !a.isAnnotationPresent(ConditionalOnMissingBean.class))
-                    .collect(Collectors.toSet());
+                .filter(a -> !a.isAnnotationPresent(ConditionalOnMissingBean.class))
+                .collect(Collectors.toSet());
 
             Set<Class<?>> subtypesOnMissing = subTypes.stream()
-                    .filter(a -> a.isAnnotationPresent(ConditionalOnMissingBean.class))
-                    .collect(Collectors.toSet());
+                .filter(a -> a.isAnnotationPresent(ConditionalOnMissingBean.class))
+                .collect(Collectors.toSet());
 
             if (subTypes.isEmpty()) {
                 throw new IocException("Cannot instantiate bean with interface " + aClass.getName() + ". No classes implementing this interface");
@@ -282,7 +284,18 @@ public class IocContainer {
             Class<?> classParam = parameterTypes[i];
             Annotation[] annotations = parameterAnnotations[i];
             Optional<Annotation> multiAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(IocMulti.class)).findFirst();
-            if (multiAnnotation.isPresent()) {
+
+            Optional<ConfigProperty> configAnnotation = Arrays.stream(annotations)
+                .filter(a -> a.annotationType().equals(ConfigProperty.class))
+                .map(a -> (ConfigProperty) a).findFirst();
+
+            if (configAnnotation.isPresent()) {
+                Optional<ConfigTransformer> configTransformerAnnotation = Arrays.stream(annotations)
+                    .filter(a -> a.annotationType().equals(ConfigTransformer.class))
+                    .map(a -> (ConfigTransformer) a).findFirst();
+                Optional<Object> configValue = PropertyInjector.parseConfig(configAnnotation.get(), configTransformerAnnotation.orElse(null), configs);
+                constructorParams.add(configValue.orElse(null));
+            } else if (multiAnnotation.isPresent()) {
                 IocMulti iocMulti = (IocMulti) multiAnnotation.get();
                 constructorParams.add(instantiateBean(reflections, iocMulti.value(), validBeans, providedBeans, multiProviders, true));
             } else {
@@ -314,5 +327,4 @@ public class IocContainer {
     public <T> List<T> getList(Class<T> clazz) {
         return (List<T>) beans.get(clazz);
     }
-
 }

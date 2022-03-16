@@ -25,31 +25,41 @@ public class PropertyInjector {
                 if (!f.isAnnotationPresent(ConfigProperty.class)) {
                     continue;
                 }
-                ConfigProperty annotation = f.getAnnotation(ConfigProperty.class);
-                Optional<Object> configValue = ReflectionUtils.getConfigValue(annotation.value(), configs);
-                if (!configValue.isPresent()) {
-                    TubingPlugin.getPlugin().getLogger().warning("[Tubing] >> No property found for config: " + annotation.value());
-                    continue;
-                }
+                ConfigTransformer configTransformer = null;
                 if (f.isAnnotationPresent(ConfigTransformer.class)) {
-                    ConfigTransformer configTransformer = f.getAnnotation(ConfigTransformer.class);
-                    Constructor<?> declaredConstructor = configTransformer.value().getDeclaredConstructors()[0];
-                    IConfigTransformer iConfigTransformer = (IConfigTransformer) declaredConstructor.newInstance();
-                    setProperties(configs, iConfigTransformer);
-                    f.setAccessible(true);
-                    f.set(o, iConfigTransformer.mapConfig(configValue.get()));
-                } else {
-                        f.setAccessible(true);
-                        f.set(o, configValue.get());
+                    configTransformer = f.getAnnotation(ConfigTransformer.class);
                 }
-
+                ConfigProperty annotation = f.getAnnotation(ConfigProperty.class);
+                Optional<Object> parsedConfigValue = parseConfig(annotation, configTransformer, configs);
+                if (parsedConfigValue.isPresent()) {
+                    f.setAccessible(true);
+                    f.set(o, parsedConfigValue.get());
+                }
             }
-
-        } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
+        } catch (IllegalAccessException e) {
             throw new IocException("Cannot inject property. Make sure the field is public", e);
         }
     }
 
+    public static Optional<Object> parseConfig(ConfigProperty configAnnotation, ConfigTransformer configTransformer, Map<String, FileConfiguration> configs) {
+        try {
+            Optional<Object> configValue = ReflectionUtils.getConfigValue(configAnnotation.value(), configs);
+            if (!configValue.isPresent()) {
+                TubingPlugin.getPlugin().getLogger().warning("[Tubing] >> No property found for config: " + configAnnotation.value());
+                return Optional.empty();
+            }
+            if (configTransformer != null) {
+                Constructor<?> declaredConstructor = configTransformer.value().getDeclaredConstructors()[0];
+                IConfigTransformer iConfigTransformer = (IConfigTransformer) declaredConstructor.newInstance();
+                setProperties(configs, iConfigTransformer);
+                return Optional.ofNullable(iConfigTransformer.mapConfig(configValue.get()));
+            } else {
+                return configValue;
+            }
+        } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            throw new IocException("Cannot create configtransformer", e);
+        }
+    }
 
     private static List<Field> getAllFields(List<Field> fields, Class<?> type) {
         fields.addAll(Arrays.asList(type.getDeclaredFields()));

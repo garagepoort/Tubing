@@ -15,6 +15,7 @@ public class ConfigurationFile {
         ConfigurationUtil.saveConfiguration(path);
         this.fileConfiguration = ConfigurationUtil.loadConfiguration(path);
     }
+
     public ConfigurationFile(String path, String identifier) {
         this.identifier = identifier;
         this.path = path;
@@ -24,6 +25,12 @@ public class ConfigurationFile {
 
     public ConfigurationFile(String path, FileConfiguration fileConfiguration) {
         this.identifier = getConfigId(path);
+        this.path = path;
+        this.fileConfiguration = fileConfiguration;
+    }
+
+    public ConfigurationFile(String path, String identifier, FileConfiguration fileConfiguration) {
+        this.identifier = identifier;
         this.path = path;
         this.fileConfiguration = fileConfiguration;
     }
