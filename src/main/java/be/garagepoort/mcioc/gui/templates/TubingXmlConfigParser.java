@@ -12,16 +12,16 @@ import org.jsoup.select.Elements;
 import java.util.List;
 
 @IocBean
-public class TubingGuiTemplateParser {
+public class TubingXmlConfigParser {
     private static final String CONFIG_PREFIX = "config|";
 
     private final TemplateConfigResolver templateConfigResolver;
 
-    public TubingGuiTemplateParser(TemplateConfigResolver templateConfigResolver) {
+    public TubingXmlConfigParser(TemplateConfigResolver templateConfigResolver) {
         this.templateConfigResolver = templateConfigResolver;
     }
 
-    public String parseHtml(String html) {
+    public String resolveConfigAttributes(String html) {
         Document document = Jsoup.parse(html, "", Parser.xmlParser());
         document.outputSettings().indentAmount(0).prettyPrint(false);
         Element tubingGuiElement = document.selectFirst("TubingGui");

@@ -14,7 +14,7 @@ import be.garagepoort.mcioc.gui.style.TubingGuiStyleIdViewProvider;
 import be.garagepoort.mcioc.gui.templates.ChatTemplate;
 import be.garagepoort.mcioc.gui.templates.ChatTemplateResolver;
 import be.garagepoort.mcioc.gui.templates.GuiTemplate;
-import be.garagepoort.mcioc.gui.templates.GuiTemplateResolver;
+import be.garagepoort.mcioc.gui.templates.GuiTemplateProcessor;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -38,7 +38,7 @@ public class GuiActionService {
     private final Map<Class<? extends Exception>, GuiExceptionHandler> exceptionHandlers = new HashMap<>();
 
     private final TubingPluginProvider tubingPluginProvider;
-    private final GuiTemplateResolver guiTemplateResolver;
+    private final GuiTemplateProcessor guiTemplateProcessor;
     private final ChatTemplateResolver chatTemplateResolver;
     private final ActionQueryParser actionQueryParser;
     private final ITubingBukkitUtil tubingBukkitUtil;
@@ -46,14 +46,14 @@ public class GuiActionService {
     private final TubingGuiStyleIdViewProvider tubingGuiStyleIdViewProvider;
 
     public GuiActionService(TubingPluginProvider tubingPluginProvider,
-                            GuiTemplateResolver guiTemplateResolver,
+                            GuiTemplateProcessor guiTemplateProcessor,
                             ChatTemplateResolver chatTemplateResolver,
                             ActionQueryParser actionQueryParser,
                             ITubingBukkitUtil tubingBukkitUtil,
                             InventoryMapper inventoryMapper,
                             TubingGuiStyleIdViewProvider tubingGuiStyleIdViewProvider) {
         this.tubingPluginProvider = tubingPluginProvider;
-        this.guiTemplateResolver = guiTemplateResolver;
+        this.guiTemplateProcessor = guiTemplateProcessor;
         this.chatTemplateResolver = chatTemplateResolver;
         this.actionQueryParser = actionQueryParser;
         this.tubingBukkitUtil = tubingBukkitUtil;
@@ -175,7 +175,8 @@ public class GuiActionService {
     }
 
     public void showGuiTemplate(Player player, GuiTemplate guiTemplate) {
-        showGui(player, guiTemplateResolver.resolve(player, guiTemplate.getTemplate(), guiTemplate.getParams()));
+
+        showGui(player, guiTemplateProcessor.process(player, guiTemplate.getTemplate(), guiTemplate.getParams()));
     }
 
     public void showChatTemplate(Player player, ChatTemplate chatTemplate) {

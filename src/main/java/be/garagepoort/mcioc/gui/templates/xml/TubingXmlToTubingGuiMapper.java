@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @IocBean
-public class TubingGuiXmlParser {
+public class TubingXmlToTubingGuiMapper {
     private static final String IF_ATTR = "if";
     private static final String TEXT_TAG = "t";
     private static final String ON_LEFT_CLICK_ATTR = "onLeftClick";
@@ -44,11 +44,11 @@ public class TubingGuiXmlParser {
 
     private final TubingPermissionService tubingPermissionService;
 
-    public TubingGuiXmlParser(TubingPermissionService tubingPermissionService, TubingGuiTextPartStyleParser tubingGuiTextPartStyleParser) {
+    public TubingXmlToTubingGuiMapper(TubingPermissionService tubingPermissionService, TubingGuiTextPartStyleParser tubingGuiTextPartStyleParser) {
         this.tubingPermissionService = tubingPermissionService;
     }
 
-    public TubingGui parseHtml(Player player, String html) {
+    public TubingGui toTubingGui(Player player, String html) {
         Document document = Jsoup.parse(html);
         Element tubingGuiElement = document.selectFirst("TubingGui");
 

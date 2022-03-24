@@ -23,7 +23,7 @@ public class TubingGuiStyleParser {
     public void parse(TubingGui tubingGui) {
         if (tubingGui.getId().isPresent()) {
             Optional<StyleConfig> style = styleRepository.getStyleConfigById(tubingGui.getId().get());
-            style.ifPresent(styleConfig -> styleConfig.getSize().ifPresent(tubingGui::setSize));
+            style.flatMap(StyleConfig::getSize).ifPresent(tubingGui::setSize);
         }
 
         tubingGuiTextStyleParser.parse(tubingGui.getTitle());

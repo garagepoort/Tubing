@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 public class TubingGuiXmlParserTest {
 
     @InjectMocks
-    private TubingGuiXmlParser tubingGuiXmlParser;
+    private TubingXmlToTubingGuiMapper tubingGuiXmlParser;
 
     @Mock
     private TubingPermissionService tubingPermissionService;
@@ -60,7 +60,7 @@ public class TubingGuiXmlParserTest {
             ClassLoader classLoader = getClass().getClassLoader();
             File file = new File(classLoader.getResource("tubinggui.xml").getFile());
             String content = new String(Files.readAllBytes(Paths.get(file.getPath())));
-            TubingGui tubingGui = tubingGuiXmlParser.parseHtml(player, content);
+            TubingGui tubingGui = tubingGuiXmlParser.toTubingGui(player, content);
 
             verify(skullItemMeta).setLore(loreCaptor.capture());
             for (String s : loreCaptor.getValue()) {
