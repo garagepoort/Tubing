@@ -11,7 +11,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Arrays;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -89,12 +89,17 @@ public abstract class TubingPlugin extends JavaPlugin {
     }
 
     public List<ConfigurationFile> getConfigurationFiles() {
-        return Arrays.asList(new ConfigurationFile("config.yml"));
+        InputStream defConfigStream = this.getResource("config.yml");
+        if (defConfigStream != null) {
+            return Collections.singletonList(new ConfigurationFile("config.yml"));
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     private boolean loadConfig() {
         configurationFiles = getConfigurationFiles();
-        if(configurationFiles.isEmpty()) {
+        if (configurationFiles.isEmpty()) {
             return true;
         }
         saveDefaultConfig();
