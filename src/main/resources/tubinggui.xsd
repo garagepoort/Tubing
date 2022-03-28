@@ -5,10 +5,15 @@
     <xsd:element name="TubingGui">
         <xsd:complexType>
             <xsd:sequence>
-                <xsd:element type="xsd:string" name="title"/>
+                <xsd:element type="xsd:string" name="title">
+                    <xsd:attribute type="xsd:string" name="color"/>
+                </xsd:element>
                 <xsd:element name="GuiItem" maxOccurs="unbounded" minOccurs="0">
                     <xsd:complexType mixed="true">
                         <xsd:sequence>
+                            <xsd:element type="xsd:string" name="name">
+                                <xsd:attribute type="xsd:string" name="color"/>
+                            </xsd:element>
                             <xsd:element name="Lore" minOccurs="0">
                                 <xsd:complexType>
                                     <xsd:sequence>
@@ -16,31 +21,38 @@
                                             <xsd:complexType>
                                                 <xsd:simpleContent>
                                                     <xsd:extension base="xsd:string">
-                                                        <xsd:attribute type="xsd:string" name="if" use="optional"/>
-                                                        <xsd:attribute type="xsd:string" name="permission"
-                                                                       use="optional"/>
+                                                        <xsd:attribute type="xsd:string" name="if"/>
+                                                        <xsd:attribute type="xsd:string" name="permission"/>
+                                                        <xsd:attribute type="xsd:string" name="color"/>
                                                     </xsd:extension>
                                                 </xsd:simpleContent>
                                             </xsd:complexType>
+                                            <xsd:attribute type="xsd:string" name="id"/>
+                                            <xsd:attribute type="xsd:string" name="class"/>
                                         </xsd:element>
                                     </xsd:sequence>
-                                    <xsd:attribute type="xsd:string" name="permission" use="optional"/>
-                                    <xsd:attribute type="xsd:string" name="if" use="optional"/>
+                                    <xsd:attribute type="xsd:string" name="permission"/>
+                                    <xsd:attribute type="xsd:string" name="if"/>
                                 </xsd:complexType>
+                                <xsd:attribute type="xsd:string" name="permission"/>
+                                <xsd:attribute type="xsd:string" name="if"/>
                             </xsd:element>
                         </xsd:sequence>
+                        <xsd:attribute type="xsd:string" name="id"/>
+                        <xsd:attribute type="xsd:string" name="class"/>
                         <xsd:attribute type="xsd:byte" name="slot" use="required"/>
                         <xsd:attribute type="xsd:string" name="material" use="required"/>
-                        <xsd:attribute type="xsd:string" name="name" use="required"/>
-                        <xsd:attribute type="xsd:string" name="if" use="optional"/>
-                        <xsd:attribute type="xsd:string" name="permission" use="optional"/>
-                        <xsd:attribute type="xsd:string" name="onLeftClick" use="optional"/>
-                        <xsd:attribute type="xsd:string" name="onRightClick" use="optional"/>
-                        <xsd:attribute type="xsd:string" name="onMiddleClick" use="optional"/>
+                        <xsd:attribute type="xsd:string" name="if"/>
+                        <xsd:attribute type="xsd:string" name="permission"/>
+                        <xsd:attribute type="xsd:string" name="onLeftClick"/>
+                        <xsd:attribute type="xsd:string" name="onRightClick"/>
+                        <xsd:attribute type="xsd:string" name="onMiddleClick"/>
                     </xsd:complexType>
                 </xsd:element>
             </xsd:sequence>
             <xsd:attribute type="xsd:byte" name="size" use="required"/>
+            <xsd:attribute type="xsd:string" name="id"/>
+            <xsd:attribute type="xsd:string" name="class"/>
         </xsd:complexType>
     </xsd:element>
 </xsd:schema>

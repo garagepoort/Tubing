@@ -13,6 +13,7 @@ import be.garagepoort.mcioc.gui.history.GuiHistoryStack;
 import be.garagepoort.mcioc.gui.model.InventoryMapper;
 import be.garagepoort.mcioc.gui.model.TubingChatGui;
 import be.garagepoort.mcioc.gui.model.TubingGui;
+import be.garagepoort.mcioc.gui.model.TubingGuiActions;
 import be.garagepoort.mcioc.gui.style.TubingGuiStyleIdViewProvider;
 import be.garagepoort.mcioc.gui.templates.ChatTemplate;
 import be.garagepoort.mcioc.gui.templates.ChatTemplateResolver;
@@ -35,7 +36,6 @@ import java.util.UUID;
 
 @IocBean
 public class GuiActionService {
-    public static final String BACK_ACTION = "$$back";
     private final Map<String, GuiActionConfig> guiActions = new HashMap<>();
     private final Map<UUID, TubingGui> inventories = new HashMap<>();
     public final Map<UUID, Boolean> isOpeningInventory = new HashMap<>();
@@ -81,7 +81,7 @@ public class GuiActionService {
 
     public void executeAction(Player player, String actionQuery) {
         try {
-            if (actionQuery.equalsIgnoreCase(BACK_ACTION)) {
+            if (actionQuery.equalsIgnoreCase(TubingGuiActions.BACK)) {
                 Optional<String> backAction = guiHistoryStack.pop(player.getUniqueId());
                 if (backAction.isPresent()) {
                     executeAction(player, backAction.get());
@@ -175,7 +175,7 @@ public class GuiActionService {
         } else if (invokedReturnedObject instanceof GuiActionReturnType) {
             GuiActionReturnType actionReturnType = (GuiActionReturnType) invokedReturnedObject;
             if (actionReturnType == GuiActionReturnType.BACK) {
-                executeAction(player, BACK_ACTION);
+                executeAction(player, TubingGuiActions.BACK);
             } else if (actionReturnType != GuiActionReturnType.KEEP_OPEN) {
                 player.closeInventory();
                 removeInventory(player);
