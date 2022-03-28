@@ -1,58 +1,97 @@
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            targetNamespace="https://staffplusplus.org"
-            xmlns="https://staffplusplus.org/schemas/tubing/tubinggui.xsd"
-            elementFormDefault="qualified">
-    <xsd:element name="TubingGui">
-        <xsd:complexType>
-            <xsd:sequence>
-                <xsd:element type="xsd:string" name="title">
-                    <xsd:attribute type="xsd:string" name="color"/>
-                </xsd:element>
-                <xsd:element name="GuiItem" maxOccurs="unbounded" minOccurs="0">
-                    <xsd:complexType mixed="true">
-                        <xsd:sequence>
-                            <xsd:element type="xsd:string" name="name">
-                                <xsd:attribute type="xsd:string" name="color"/>
-                            </xsd:element>
-                            <xsd:element name="Lore" minOccurs="0">
-                                <xsd:complexType>
-                                    <xsd:sequence>
-                                        <xsd:element name="LoreLine" maxOccurs="unbounded" minOccurs="0">
-                                            <xsd:complexType>
-                                                <xsd:simpleContent>
-                                                    <xsd:extension base="xsd:string">
-                                                        <xsd:attribute type="xsd:string" name="if"/>
-                                                        <xsd:attribute type="xsd:string" name="permission"/>
-                                                        <xsd:attribute type="xsd:string" name="color"/>
-                                                    </xsd:extension>
-                                                </xsd:simpleContent>
-                                            </xsd:complexType>
-                                            <xsd:attribute type="xsd:string" name="id"/>
-                                            <xsd:attribute type="xsd:string" name="class"/>
-                                        </xsd:element>
-                                    </xsd:sequence>
-                                    <xsd:attribute type="xsd:string" name="permission"/>
-                                    <xsd:attribute type="xsd:string" name="if"/>
-                                </xsd:complexType>
-                                <xsd:attribute type="xsd:string" name="permission"/>
-                                <xsd:attribute type="xsd:string" name="if"/>
-                            </xsd:element>
-                        </xsd:sequence>
-                        <xsd:attribute type="xsd:string" name="id"/>
-                        <xsd:attribute type="xsd:string" name="class"/>
-                        <xsd:attribute type="xsd:byte" name="slot" use="required"/>
-                        <xsd:attribute type="xsd:string" name="material" use="required"/>
-                        <xsd:attribute type="xsd:string" name="if"/>
-                        <xsd:attribute type="xsd:string" name="permission"/>
-                        <xsd:attribute type="xsd:string" name="onLeftClick"/>
-                        <xsd:attribute type="xsd:string" name="onRightClick"/>
-                        <xsd:attribute type="xsd:string" name="onMiddleClick"/>
-                    </xsd:complexType>
-                </xsd:element>
-            </xsd:sequence>
-            <xsd:attribute type="xsd:byte" name="size" use="required"/>
-            <xsd:attribute type="xsd:string" name="id"/>
-            <xsd:attribute type="xsd:string" name="class"/>
-        </xsd:complexType>
-    </xsd:element>
-</xsd:schema>
+<xs:schema elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="TubingGui">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="title">
+                    <xs:complexType mixed="true">
+                        <xs:sequence>
+                            <xs:element name="t" maxOccurs="unbounded" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:simpleContent>
+                                        <xs:extension base="xs:string">
+                                            <xs:attribute type="xs:string" name="id"/>
+                                            <xs:attribute type="xs:string" name="class"/>
+                                            <xs:attribute type="xs:string" name="color"/>
+                                        </xs:extension>
+                                    </xs:simpleContent>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute type="xs:string" name="id"/>
+                        <xs:attribute type="xs:string" name="class"/>
+                        <xs:attribute type="xs:string" name="color"/>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="GuiItem" maxOccurs="unbounded" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="name">
+                                <xs:complexType mixed="true">
+                                    <xs:sequence>
+                                        <xs:element name="t" maxOccurs="unbounded" minOccurs="0">
+                                            <xs:complexType>
+                                                <xs:simpleContent>
+                                                    <xs:extension base="xs:string">
+                                                        <xs:attribute type="xs:string" name="id"/>
+                                                        <xs:attribute type="xs:string" name="class"/>
+                                                        <xs:attribute type="xs:string" name="color"/>
+                                                    </xs:extension>
+                                                </xs:simpleContent>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute type="xs:string" name="permission"/>
+                                    <xs:attribute type="xs:string" name="if"/>
+                                    <xs:attribute type="xs:string" name="id"/>
+                                    <xs:attribute type="xs:string" name="class"/>
+                                    <xs:attribute type="xs:string" name="color"/>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="Lore" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="LoreLine" maxOccurs="unbounded" minOccurs="0">
+                                            <xs:complexType mixed="true">
+                                                <xs:sequence>
+                                                    <xs:element name="t" maxOccurs="unbounded" minOccurs="0">
+                                                        <xs:complexType>
+                                                            <xs:simpleContent>
+                                                                <xs:extension base="xs:string">
+                                                                    <xs:attribute type="xs:string" name="id"
+                                                                    />
+                                                                    <xs:attribute type="xs:string" name="class"
+                                                                    />
+                                                                    <xs:attribute type="xs:string" name="color"
+                                                                    />
+                                                                </xs:extension>
+                                                            </xs:simpleContent>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                                <xs:attribute type="xs:string" name="permission"/>
+                                                <xs:attribute type="xs:string" name="if"/>
+                                                <xs:attribute type="xs:string" name="id"/>
+                                                <xs:attribute type="xs:string" name="class"/>
+                                                <xs:attribute type="xs:string" name="color"/>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute type="xs:string" name="id"/>
+                        <xs:attribute type="xs:string" name="class"/>
+                        <xs:attribute type="xs:byte" name="slot"/>
+                        <xs:attribute type="xs:string" name="onLeftClick"/>
+                        <xs:attribute type="xs:string" name="onRightClick"/>
+                        <xs:attribute type="xs:string" name="onMiddleClick"/>
+                        <xs:attribute type="xs:string" name="material"/>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute type="xs:byte" name="size"/>
+            <xs:attribute type="xs:string" name="id"/>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
