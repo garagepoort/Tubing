@@ -35,7 +35,7 @@ import java.util.UUID;
 
 @IocBean
 public class GuiActionService {
-    public static final String $$_BACK_ACTION = "$$back";
+    public static final String BACK_ACTION = "$$back";
     private final Map<String, GuiActionConfig> guiActions = new HashMap<>();
     private final Map<UUID, TubingGui> inventories = new HashMap<>();
     public final Map<UUID, Boolean> isOpeningInventory = new HashMap<>();
@@ -81,7 +81,7 @@ public class GuiActionService {
 
     public void executeAction(Player player, String actionQuery) {
         try {
-            if (actionQuery.equalsIgnoreCase($$_BACK_ACTION)) {
+            if (actionQuery.equalsIgnoreCase(BACK_ACTION)) {
                 Optional<String> backAction = guiHistoryStack.pop(player.getUniqueId());
                 if (backAction.isPresent()) {
                     executeAction(player, backAction.get());
@@ -174,7 +174,9 @@ public class GuiActionService {
             removeInventory(player);
         } else if (invokedReturnedObject instanceof GuiActionReturnType) {
             GuiActionReturnType actionReturnType = (GuiActionReturnType) invokedReturnedObject;
-            if (actionReturnType != GuiActionReturnType.KEEP_OPEN) {
+            if (actionReturnType == GuiActionReturnType.BACK) {
+                executeAction(player, BACK_ACTION);
+            } else if (actionReturnType != GuiActionReturnType.KEEP_OPEN) {
                 player.closeInventory();
                 removeInventory(player);
             }
