@@ -44,7 +44,7 @@ public class IocContainer {
     private Map<String, FileConfiguration> configs;
 
     public void init(JavaPlugin javaPlugin, Map<String, FileConfiguration> configs) {
-        reflections = new Reflections(new TypeAnnotationsScanner(), new SubTypesScanner());
+        reflections = new Reflections(javaPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
         this.configs = configs;
         loadIocBeans(configs);
         loadCommandHandlerBeans(javaPlugin);
