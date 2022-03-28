@@ -23,12 +23,13 @@ public class GuiActionBuilder {
         String[] split = actionQuery.split(Pattern.quote("?"), 2);
         GuiActionBuilder actionBuilder = new GuiActionBuilder();
         actionBuilder.action = split[0];
-        actionBuilder.params = getParams(split);
+        actionBuilder.params = getParams(actionQuery);
 
         return actionBuilder;
     }
 
-    private static Map<String, String> getParams(String[] split) {
+    private static Map<String, String> getParams(String actionQuery) {
+        String[] split = actionQuery.split(Pattern.quote("?"), 2);
         Map<String, String> paramMap = new HashMap<>();
         if (split.length > 1) {
             String[] queryParams = split[1].split("&");

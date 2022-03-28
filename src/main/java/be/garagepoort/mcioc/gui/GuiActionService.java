@@ -1,12 +1,15 @@
 package be.garagepoort.mcioc.gui;
 
+import be.garagepoort.mcioc.GuiActionConfig;
 import be.garagepoort.mcioc.IocBean;
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
 import be.garagepoort.mcioc.common.ITubingBukkitUtil;
 import be.garagepoort.mcioc.common.TubingPluginProvider;
 import be.garagepoort.mcioc.gui.actionquery.ActionQueryParser;
+import be.garagepoort.mcioc.gui.actionquery.GuiActionQuery;
 import be.garagepoort.mcioc.gui.exceptions.GuiExceptionHandler;
+import be.garagepoort.mcioc.gui.history.GuiHistoryStack;
 import be.garagepoort.mcioc.gui.model.InventoryMapper;
 import be.garagepoort.mcioc.gui.model.TubingChatGui;
 import be.garagepoort.mcioc.gui.model.TubingGui;
@@ -29,12 +32,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 @IocBean
 public class GuiActionService {
-    private final Map<String, Method> guiActions = new HashMap<>();
+    public static final String $$_BACK_ACTION = "$$back";
+    private final Map<String, GuiActionConfig> guiActions = new HashMap<>();
     private final Map<UUID, TubingGui> inventories = new HashMap<>();
+    public final Map<UUID, Boolean> isOpeningInventory = new HashMap<>();
     private final Map<Class<? extends Exception>, GuiExceptionHandler> exceptionHandlers = new HashMap<>();
 
     private final TubingPluginProvider tubingPluginProvider;
@@ -44,6 +48,7 @@ public class GuiActionService {
     private final ITubingBukkitUtil tubingBukkitUtil;
     private final InventoryMapper inventoryMapper;
     private final TubingGuiStyleIdViewProvider tubingGuiStyleIdViewProvider;
+    private final GuiHistoryStack guiHistoryStack;
 
     public GuiActionService(TubingPluginProvider tubingPluginProvider,
                             GuiTemplateProcessor guiTemplateProcessor,
@@ -51,7 +56,7 @@ public class GuiActionService {
                             ActionQueryParser actionQueryParser,
                             ITubingBukkitUtil tubingBukkitUtil,
                             InventoryMapper inventoryMapper,
-                            TubingGuiStyleIdViewProvider tubingGuiStyleIdViewProvider) {
+                            TubingGuiStyleIdViewProvider tubingGuiStyleIdViewProvider, GuiHistoryStack guiHistoryStack) {
         this.tubingPluginProvider = tubingPluginProvider;
         this.guiTemplateProcessor = guiTemplateProcessor;
         this.chatTemplateResolver = chatTemplateResolver;
@@ -59,6 +64,7 @@ public class GuiActionService {
         this.tubingBukkitUtil = tubingBukkitUtil;
         this.inventoryMapper = inventoryMapper;
         this.tubingGuiStyleIdViewProvider = tubingGuiStyleIdViewProvider;
+        this.guiHistoryStack = guiHistoryStack;
     }
 
     public void setInventory(Player player, TubingGui tubingGui) {
@@ -75,16 +81,26 @@ public class GuiActionService {
 
     public void executeAction(Player player, String actionQuery) {
         try {
-            String[] split = actionQuery.split(Pattern.quote("?"), 2);
-            String action = split[0];
-
-            if (!guiActions.containsKey(action)) {
-                throw new IocException("No Gui Action found for [" + action + "]");
+            if (actionQuery.equalsIgnoreCase($$_BACK_ACTION)) {
+                Optional<String> backAction = guiHistoryStack.pop(player.getUniqueId());
+                if (backAction.isPresent()) {
+                    executeAction(player, backAction.get());
+                    return;
+                }
+                player.closeInventory();
+                removeInventory(player);
+                return;
             }
 
-            Method method = guiActions.get(action);
-            Map<String, String> paramMap = actionQueryParser.getParams(actionQuery);
-            Object[] methodParams = actionQueryParser.getMethodParams(method, actionQuery, player);
+            GuiActionQuery guiActionQuery = new GuiActionQuery(actionQuery);
+
+            if (!guiActions.containsKey(guiActionQuery.getRoute())) {
+                throw new IocException("No Gui Action found for [" + guiActionQuery.getRoute() + "]");
+            }
+
+            GuiActionConfig guiActionConfig = guiActions.get(guiActionQuery.getRoute());
+            Method method = guiActionConfig.getMethod();
+            Object[] methodParams = actionQueryParser.getMethodParams(method, guiActionQuery, player);
 
             Object bean = tubingPluginProvider.getPlugin().getIocContainer().get(method.getDeclaringClass());
             if (bean == null) {
@@ -94,11 +110,10 @@ public class GuiActionService {
             try {
                 Object invokedReturnedObject = method.invoke(bean, methodParams);
                 if (invokedReturnedObject instanceof AsyncGui) {
-                    processAsyncGuiAction(player, actionQuery, method, paramMap, (AsyncGui) invokedReturnedObject);
+                    processAsyncGuiAction(player, guiActionQuery, guiActionConfig, method, (AsyncGui) invokedReturnedObject);
                 } else {
-                    processGuiAction(player, actionQuery, method, paramMap, invokedReturnedObject);
+                    processGuiAction(player, guiActionQuery, guiActionConfig, method, invokedReturnedObject);
                 }
-
             } catch (InvocationTargetException e) {
                 handleException(player, e.getCause());
             }
@@ -107,12 +122,12 @@ public class GuiActionService {
         }
     }
 
-    private void processAsyncGuiAction(Player player, String actionQuery, Method method, Map<String, String> paramMap, AsyncGui invokedReturnedObject) {
+    private void processAsyncGuiAction(Player player, GuiActionQuery actionQuery, GuiActionConfig guiActionConfig, Method method, AsyncGui invokedReturnedObject) {
         tubingBukkitUtil.runAsync(() -> {
             try {
                 AsyncGui asyncGui = invokedReturnedObject;
                 Object run = asyncGui.getAsyncGuiExecutor().run();
-                tubingBukkitUtil.runTaskLater(() -> processGuiAction(player, actionQuery, method, paramMap, run), 1);
+                tubingBukkitUtil.runTaskLater(() -> processGuiAction(player, actionQuery, guiActionConfig, method, run), 1);
             } catch (Throwable e) {
                 try {
                     handleException(player, e);
@@ -132,8 +147,8 @@ public class GuiActionService {
         }
 
         Optional<Class<? extends Exception>> parentException = exceptionHandlers.keySet().stream()
-                .filter(c -> c.isAssignableFrom(e.getClass()))
-                .findFirst();
+            .filter(c -> c.isAssignableFrom(e.getClass()))
+            .findFirst();
 
         if (parentException.isPresent()) {
             exceptionHandlers.get(parentException.get()).accept(player, e);
@@ -145,10 +160,15 @@ public class GuiActionService {
         throw e;
     }
 
-    private void processGuiAction(Player player, String actionQuery, Method method, Map<String, String> paramMap, Object invokedReturnedObject) {
+    private void processGuiAction(Player player,
+                                  GuiActionQuery actionQuery,
+                                  GuiActionConfig guiActionConfig,
+                                  Method method,
+                                  Object invokedReturnedObject) {
+        guiHistoryStack.push(player.getUniqueId(), actionQuery, guiActionConfig.isOverrideHistory());
         if (invokedReturnedObject instanceof TubingGui) {
             TubingGui tubingGui = (TubingGui) invokedReturnedObject;
-            showGui(player, tubingGui);
+            showGui(player, tubingGui, actionQuery, guiActionConfig);
         } else if (invokedReturnedObject == null) {
             player.closeInventory();
             removeInventory(player);
@@ -160,11 +180,11 @@ public class GuiActionService {
             }
         } else if (invokedReturnedObject instanceof GuiTemplate) {
             GuiTemplate guiTemplate = (GuiTemplate) invokedReturnedObject;
-            addTemplateParams(player, actionQuery, method, paramMap, guiTemplate.getParams());
-            showGuiTemplate(player, guiTemplate);
+            addTemplateParams(player, actionQuery, method, guiTemplate.getParams());
+            showGuiTemplate(player, guiTemplate, actionQuery, guiActionConfig);
         } else if (invokedReturnedObject instanceof ChatTemplate) {
             ChatTemplate chatTemplate = (ChatTemplate) invokedReturnedObject;
-            addTemplateParams(player, actionQuery, method, paramMap, chatTemplate.getParams());
+            addTemplateParams(player, actionQuery, method, chatTemplate.getParams());
             showChatTemplate(player, chatTemplate);
         } else if (invokedReturnedObject instanceof String) {
             String redirectAction = (String) invokedReturnedObject;
@@ -174,17 +194,21 @@ public class GuiActionService {
         }
     }
 
-    public void showGuiTemplate(Player player, GuiTemplate guiTemplate) {
-
-        showGui(player, guiTemplateProcessor.process(player, guiTemplate.getTemplate(), guiTemplate.getParams()));
+    public void showGuiTemplate(Player player, GuiTemplate guiTemplate, GuiActionQuery actionQuery, GuiActionConfig guiActionConfig) {
+        showGui(player, guiTemplateProcessor.process(player,
+                guiTemplate.getTemplate(),
+                guiTemplate.getParams()),
+            actionQuery,
+            guiActionConfig);
     }
 
     public void showChatTemplate(Player player, ChatTemplate chatTemplate) {
         showChat(player, chatTemplateResolver.resolve(chatTemplate.getTemplate(), chatTemplate.getParams()));
     }
 
-    public void showGui(Player player, TubingGui tubingGui) {
+    public void showGui(Player player, TubingGui tubingGui, GuiActionQuery actionQuery, GuiActionConfig guiActionConfig) {
         tubingBukkitUtil.runTaskLater(() -> {
+            isOpeningInventory.put(player.getUniqueId(), true);
             player.closeInventory();
             boolean showId = tubingGuiStyleIdViewProvider.canView(player);
             Inventory inventory = inventoryMapper.map(tubingGui, showId);
@@ -202,7 +226,7 @@ public class GuiActionService {
         }, 1);
     }
 
-    private Map<String, Object> getTemplateParams(Method method, Map<String, String> paramMap, String actionQuery, Player player) {
+    private Map<String, Object> getTemplateParams(Method method, GuiActionQuery actionQuery, Player player) {
         Map<String, Object> methodParams = new HashMap<>();
         Class<?>[] parameterTypes = method.getParameterTypes();
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
@@ -211,16 +235,16 @@ public class GuiActionService {
             Optional<Annotation> paramAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(GuiParam.class)).findFirst();
             if (paramAnnotation.isPresent()) {
                 GuiParam param = (GuiParam) paramAnnotation.get();
-                if (paramMap.containsKey(param.value())) {
-                    methodParams.put(param.value(), toObject(parameterTypes[i], paramMap.get(param.value())));
+                if (actionQuery.getParams().containsKey(param.value())) {
+                    methodParams.put(param.value(), toObject(parameterTypes[i], actionQuery.getParams().get(param.value())));
                 } else if (StringUtils.isNotBlank(param.defaultValue())) {
                     methodParams.put(param.value(), toObject(parameterTypes[i], param.defaultValue()));
                 }
             }
         }
         methodParams.put("player", player);
-        methodParams.put("currentAction", actionQuery);
-        paramMap.forEach((k, v) -> {
+        methodParams.put("currentAction", actionQuery.getFullQuery());
+        actionQuery.getParams().forEach((k, v) -> {
             if (!methodParams.containsKey(k)) {
                 methodParams.put(k, v);
             }
@@ -249,10 +273,11 @@ public class GuiActionService {
         for (Method actionMethod : actionMethods) {
             GuiAction annotation = actionMethod.getAnnotation(GuiAction.class);
             String value = annotation.value();
+            boolean overrideHistory = annotation.overrideHistory();
             if (guiActions.containsKey(value)) {
                 throw new IocException("Duplicate GUI action defined: [" + value + "]");
             }
-            guiActions.put(value, actionMethod);
+            guiActions.put(value, new GuiActionConfig(value, actionMethod, overrideHistory));
         }
     }
 
@@ -260,13 +285,12 @@ public class GuiActionService {
         inventories.remove(player.getUniqueId());
     }
 
-    private void addTemplateParams(Player player, String actionQuery, Method method, Map<String, String> paramMap, Map<String, Object> params) {
-        Map<String, Object> templateParams = getTemplateParams(method, paramMap, actionQuery, player);
+    private void addTemplateParams(Player player, GuiActionQuery actionQuery, Method method, Map<String, Object> params) {
+        Map<String, Object> templateParams = getTemplateParams(method, actionQuery, player);
         templateParams.forEach((k, v) -> {
             if (!params.containsKey(k)) {
                 params.put(k, v);
             }
         });
     }
-
 }

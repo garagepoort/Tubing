@@ -10,4 +10,6 @@ import java.lang.annotation.Target;
 public @interface GuiAction {
 
     String value();
+
+    boolean overrideHistory() default true;
 }

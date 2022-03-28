@@ -9,18 +9,15 @@ import org.bukkit.entity.Player;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.net.URLDecoder;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 @IocBean
 public class ActionQueryParser {
 
-    public Object[] getMethodParams(Method method, String actionQuery, Player player) {
-        Map<String, String> paramMap = getParams(actionQuery);
+    public Object[] getMethodParams(Method method, GuiActionQuery actionQuery, Player player) {
+        Map<String, String> paramMap = actionQuery.getParams();
 
         Object[] methodParams = new Object[method.getParameterCount()];
         Class<?>[] parameterTypes = method.getParameterTypes();
@@ -40,7 +37,7 @@ public class ActionQueryParser {
             } else {
                 Optional<Annotation> currentActionAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(CurrentAction.class)).findFirst();
                 if (currentActionAnnotation.isPresent()) {
-                    methodParams[i] = actionQuery;
+                    methodParams[i] = actionQuery.getFullQuery();
                 }
             }
             Optional<Annotation> allParamsAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(GuiParams.class)).findFirst();
@@ -49,19 +46,6 @@ public class ActionQueryParser {
             }
         }
         return methodParams;
-    }
-
-    public Map<String, String> getParams(String actionQuery) {
-        String[] split = actionQuery.split(Pattern.quote("?"), 2);
-        Map<String, String> paramMap = new HashMap<>();
-        if (split.length > 1) {
-            String[] queryParams = split[1].split("&");
-            for (String queryParam : queryParams) {
-                String[] paramKeyValue = queryParam.split("=");
-                paramMap.put(paramKeyValue[0], URLDecoder.decode(paramKeyValue[1]));
-            }
-        }
-        return paramMap;
     }
 
     private Object toObject(Class clazz, String value) {
