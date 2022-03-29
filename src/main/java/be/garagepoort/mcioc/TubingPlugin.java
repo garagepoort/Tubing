@@ -3,9 +3,7 @@ package be.garagepoort.mcioc;
 import be.garagepoort.mcioc.configuration.files.AutoUpdater;
 import be.garagepoort.mcioc.configuration.files.ConfigMigrator;
 import be.garagepoort.mcioc.configuration.files.ConfigurationFile;
-import be.garagepoort.mcioc.gui.GuiActionService;
-import be.garagepoort.mcioc.gui.InventoryClick;
-import be.garagepoort.mcioc.gui.InventoryClose;
+import be.garagepoort.mcioc.load.OnLoad;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.HandlerList;
@@ -36,10 +34,7 @@ public abstract class TubingPlugin extends JavaPlugin {
             return;
         }
         iocContainer.init(this, getFileConfigurations());
-        iocContainer.get(GuiActionService.class).loadGuiControllers();
-
-        Bukkit.getPluginManager().registerEvents(new InventoryClick(), this);
-        Bukkit.getPluginManager().registerEvents(new InventoryClose(), this);
+        iocContainer.getList(OnLoad.class).forEach(onLoad -> onLoad.load(this));
 
         enable();
     }
@@ -59,10 +54,7 @@ public abstract class TubingPlugin extends JavaPlugin {
 
         iocContainer = new IocContainer();
         iocContainer.init(this, getFileConfigurations());
-        iocContainer.get(GuiActionService.class).loadGuiControllers();
-
-        Bukkit.getPluginManager().registerEvents(new InventoryClick(), this);
-        Bukkit.getPluginManager().registerEvents(new InventoryClose(), this);
+        iocContainer.getList(OnLoad.class).forEach(onLoad -> onLoad.load(this));
     }
 
     protected void beforeReload() {

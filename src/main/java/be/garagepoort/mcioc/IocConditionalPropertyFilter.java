@@ -10,11 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static be.garagepoort.mcioc.IocContainer.beanAnnotations;
-
 public class IocConditionalPropertyFilter {
 
-    public boolean isValidBean(Class clazz, Map<String, FileConfiguration> configs) {
+    public boolean isValidBean(List<Class> beanAnnotations, Class clazz, Map<String, FileConfiguration> configs) {
         try {
             Annotation annotation = Arrays.stream(clazz.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst()
                 .orElseThrow(() -> new RuntimeException("Invalid Tubing configuration. No bean annotation on class: " + clazz.getName()));
