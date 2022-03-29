@@ -7,4 +7,8 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface IocListener {}
+public @interface IocListener {
+    String conditionalOnProperty() default "";
+
+    boolean priority() default false;
+}

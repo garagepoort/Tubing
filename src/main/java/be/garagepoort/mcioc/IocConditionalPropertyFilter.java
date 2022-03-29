@@ -3,22 +3,31 @@ package be.garagepoort.mcioc;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.configuration.file.FileConfiguration;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static be.garagepoort.mcioc.IocContainer.beanAnnotations;
+
 public class IocConditionalPropertyFilter {
 
-    public boolean isValidBean(Class a, Map<String, FileConfiguration> configs) {
-        IocBean annotation = (IocBean) a.getAnnotation(IocBean.class);
-        String conditionalOnProperty = annotation.conditionalOnProperty();
-        if (!StringUtils.isEmpty(conditionalOnProperty)) {
-            List<String> conditionSections = Arrays.stream(conditionalOnProperty.split("&&")).map(String::trim).collect(Collectors.toList());
+    public boolean isValidBean(Class clazz, Map<String, FileConfiguration> configs) {
+        try {
+            Annotation annotation = Arrays.stream(clazz.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst()
+                .orElseThrow(() -> new RuntimeException("Invalid Tubing configuration. No bean annotation on class: " + clazz.getName()));
+            String conditionalOnProperty = (String) annotation.annotationType().getMethod("conditionalOnProperty").invoke(annotation);
 
-            return conditionSections.stream().allMatch(c -> isValid(configs, c));
+            if (!StringUtils.isEmpty(conditionalOnProperty)) {
+                List<String> conditionSections = Arrays.stream(conditionalOnProperty.split("&&")).map(String::trim).collect(Collectors.toList());
+                return conditionSections.stream().allMatch(c -> isValid(configs, c));
+            }
+            return true;
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException("Invalid bean configuration. not property found");
         }
-        return true;
     }
 
     private boolean isValid(Map<String, FileConfiguration> configs, String conditionalOnProperty) {
@@ -26,7 +35,7 @@ public class IocConditionalPropertyFilter {
             String key = StringUtils.substringBetween(conditionalOnProperty, "(", ")");
 
             String configValue = ReflectionUtils.getConfigStringValue(key, configs)
-                    .orElseThrow(() -> new IocException("ConditionOnProperty referencing an unknown property [" + key + "]"));
+                .orElseThrow(() -> new IocException("ConditionOnProperty referencing an unknown property [" + key + "]"));
             return StringUtils.isNotEmpty(configValue);
         } else {
             String[] split = conditionalOnProperty.split("=", 2);
@@ -34,7 +43,7 @@ public class IocConditionalPropertyFilter {
             String value = split[1];
 
             String configValue = ReflectionUtils.getConfigStringValue(key, configs)
-                    .orElseThrow(() -> new IocException("ConditionOnProperty referencing an unknown property [" + key + "]"));
+                .orElseThrow(() -> new IocException("ConditionOnProperty referencing an unknown property [" + key + "]"));
 
             return configValue.equalsIgnoreCase(value);
         }

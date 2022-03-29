@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,8 @@ import static be.garagepoort.mcioc.configuration.PropertyInjector.injectConfigur
 
 public class IocContainer {
 
+    public static final List<Class> beanAnnotations = Arrays.asList(IocBean.class, IocListener.class, IocCommandHandler.class, IocMessageListener.class);
+
     private static final Logger LOGGER = LoggerFactory.getLogger(IocContainer.class);
     private final Map<Class, Object> beans = new HashMap<>();
     private final IocConditionalPropertyFilter iocConditionalPropertyFilter = new IocConditionalPropertyFilter();
@@ -44,7 +47,7 @@ public class IocContainer {
     private Map<String, FileConfiguration> configs;
 
     public void init(JavaPlugin javaPlugin, Map<String, FileConfiguration> configs) {
-        reflections = new Reflections(javaPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
+        reflections = new Reflections(new TypeAnnotationsScanner(), new SubTypesScanner());
         this.configs = configs;
         loadIocBeans(configs);
         loadCommandHandlerBeans(javaPlugin);
@@ -62,13 +65,24 @@ public class IocContainer {
             List<Method> providers = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocBeanProvider.class).stream()).collect(Collectors.toList());
             List<Method> multiProviders = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocMultiProvider.class).stream()).collect(Collectors.toList());
 
-            List<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocBean.class).stream()
+            Set<Class<?>> allBeans = new HashSet<>();
+            for (Class beanAnnotation : beanAnnotations) {
+                allBeans.addAll(reflections.getTypesAnnotatedWith(beanAnnotation));
+            }
+
+            List<Class<?>> typesAnnotatedWith = allBeans.stream()
                 .filter(a -> iocConditionalPropertyFilter.isValidBean(a, configs))
                 .filter(iocConditionalFilter::isValidBean)
                 .sorted((o1, o2) -> {
-                    IocBean annotation1 = o1.getAnnotation(IocBean.class);
-                    IocBean annotation2 = o2.getAnnotation(IocBean.class);
-                    return Boolean.compare(annotation2.priority(), annotation1.priority());
+                    Annotation annotation1 = Arrays.stream(o1.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst().get();
+                    Annotation annotation2 = Arrays.stream(o2.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst().get();
+                    try {
+                        boolean priority1 = (boolean) annotation1.annotationType().getMethod("priority").invoke(annotation1);
+                        boolean priority2 = (boolean) annotation2.annotationType().getMethod("priority").invoke(annotation2);
+                        return Boolean.compare(priority2, priority1);
+                    } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                        throw new RuntimeException("Invalid bean configuration. not property found");
+                    }
                 })
                 .collect(Collectors.toList());
 
@@ -222,9 +236,10 @@ public class IocContainer {
             return getProvidedBean(reflections, aClass, validBeans, providers, multiProviders);
         }
 
-        if (!aClass.isAnnotationPresent(IocBean.class) && providers.stream().map(Method::getReturnType).noneMatch(a -> a == aClass)) {
-            throw new IocException("Cannot instantiate bean. No IocBean annotation present. [" + aClass.getName() + "]");
+        if (Arrays.stream(aClass.getAnnotations()).noneMatch(a -> beanAnnotations.contains(a.annotationType())) && providers.stream().map(Method::getReturnType).noneMatch(a -> a == aClass)) {
+            throw new IocException("Cannot instantiate bean. No Bean annotation present. [" + aClass.getName() + "]");
         }
+
         if (!validBeans.contains(aClass)) {
             throw new IocException("Cannot instantiate bean. No bean found for : [" + aClass + "]");
         }

@@ -9,4 +9,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface IocMessageListener {
     String channel();
+
+    String conditionalOnProperty() default "";
+
+    boolean priority() default false;
 }

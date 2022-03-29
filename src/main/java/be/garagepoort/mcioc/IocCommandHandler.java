@@ -11,4 +11,7 @@ public @interface IocCommandHandler {
 
     String value();
 
+    String conditionalOnProperty() default "";
+
+    boolean priority() default false;
 }
