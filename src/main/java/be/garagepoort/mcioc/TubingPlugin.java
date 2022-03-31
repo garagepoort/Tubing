@@ -34,7 +34,10 @@ public abstract class TubingPlugin extends JavaPlugin {
             return;
         }
         iocContainer.init(this, getFileConfigurations());
-        iocContainer.getList(OnLoad.class).forEach(onLoad -> onLoad.load(this));
+        List<OnLoad> onloads = iocContainer.getList(OnLoad.class);
+        if (onloads != null) {
+            onloads.forEach(onLoad -> onLoad.load(this));
+        }
 
         enable();
     }
@@ -54,7 +57,10 @@ public abstract class TubingPlugin extends JavaPlugin {
 
         iocContainer = new IocContainer();
         iocContainer.init(this, getFileConfigurations());
-        iocContainer.getList(OnLoad.class).forEach(onLoad -> onLoad.load(this));
+        List<OnLoad> onloads = iocContainer.getList(OnLoad.class);
+        if (onloads != null) {
+            onloads.forEach(onLoad -> onLoad.load(this));
+        }
     }
 
     protected void beforeReload() {
