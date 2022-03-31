@@ -14,10 +14,6 @@ Some of it core features are:
         - Support for multiple configuration files
         - Automatically update configuration files
         - Inject configuration properties anytime anywhere with a simple annotation
-    - Tubing GUIs
-        - Builds GUIs easily
-        - Use XML templating for building GUIs
-        - Easily handling user flows by providing a GUI history
 
 ## Setup
 
