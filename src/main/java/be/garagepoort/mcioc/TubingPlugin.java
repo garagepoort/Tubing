@@ -3,6 +3,7 @@ package be.garagepoort.mcioc;
 import be.garagepoort.mcioc.configuration.files.AutoUpdater;
 import be.garagepoort.mcioc.configuration.files.ConfigMigrator;
 import be.garagepoort.mcioc.configuration.files.ConfigurationFile;
+import be.garagepoort.mcioc.load.BeforeTubingReload;
 import be.garagepoort.mcioc.load.OnLoad;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -48,6 +49,10 @@ public abstract class TubingPlugin extends JavaPlugin {
     }
 
     public void reload() {
+        List<BeforeTubingReload> beforeTubingReloads = iocContainer.getList(BeforeTubingReload.class);
+        if (beforeTubingReloads != null) {
+            beforeTubingReloads.forEach(onLoad -> onLoad.execute(this));
+        }
         beforeReload();
         loadConfig();
         reloadConfig();
