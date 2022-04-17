@@ -65,8 +65,6 @@ public class ReflectionUtils {
             Optional<String> configValue = getConfigValue(nestedConfig, configs);
             if(configValue.isPresent()) {
                 identifier = identifier.replace("%" + nestedConfig + "%", configValue.get());
-            }else {
-                TubingPlugin.getPlugin().getLogger().warning("[Tubing] >> No property found for config: " + nestedConfig);
             }
         }
         return identifier;
