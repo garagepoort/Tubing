@@ -9,5 +9,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface ConfigTransformer {
 
-    Class<? extends IConfigTransformer> value();
+    Class<? extends IConfigTransformer>[] value();
 }

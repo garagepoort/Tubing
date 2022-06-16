@@ -47,10 +47,14 @@ public class PropertyInjector {
                 return Optional.empty();
             }
             if (configTransformer != null) {
-                Constructor<?> declaredConstructor = configTransformer.value().getDeclaredConstructors()[0];
-                IConfigTransformer iConfigTransformer = (IConfigTransformer) declaredConstructor.newInstance();
-                setProperties(configs, iConfigTransformer);
-                return Optional.ofNullable(iConfigTransformer.mapConfig(configValue.get()));
+                Object transformedConfig = configValue.get();
+                for (Class<? extends IConfigTransformer> transformerClass : configTransformer.value()) {
+                    Constructor<?> declaredConstructor = transformerClass.getDeclaredConstructors()[0];
+                    IConfigTransformer iConfigTransformer = (IConfigTransformer) declaredConstructor.newInstance();
+                    setProperties(configs, iConfigTransformer);
+                    transformedConfig = iConfigTransformer.mapConfig(transformedConfig);
+                }
+                return Optional.ofNullable(transformedConfig);
             } else {
                 return configValue;
             }

@@ -35,7 +35,15 @@ public class IocConditionalPropertyFilter {
             String configValue = ReflectionUtils.getConfigStringValue(key, configs)
                 .orElseThrow(() -> new IocException("ConditionOnProperty referencing an unknown property [" + key + "]"));
             return StringUtils.isNotEmpty(configValue);
-        } else {
+        }
+        else if (conditionalOnProperty.startsWith("isEmpty")) {
+            String key = StringUtils.substringBetween(conditionalOnProperty, "(", ")");
+
+            String configValue = ReflectionUtils.getConfigStringValue(key, configs)
+                .orElseThrow(() -> new IocException("ConditionOnProperty referencing an unknown property [" + key + "]"));
+            return StringUtils.isBlank(configValue);
+        }
+        else {
             String[] split = conditionalOnProperty.split("=", 2);
             String key = split[0];
             String value = split[1];
