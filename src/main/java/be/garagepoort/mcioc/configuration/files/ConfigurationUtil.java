@@ -1,9 +1,10 @@
 package be.garagepoort.mcioc.configuration.files;
 
 import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.configuration.config.Configuration;
+import be.garagepoort.mcioc.configuration.config.ConfigurationProvider;
+import be.garagepoort.mcioc.configuration.config.YamlConfiguration;
 import org.apache.commons.lang.Validate;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -16,22 +17,19 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class ConfigurationUtil {
-
-    private static final Logger logger = TubingPlugin.getPlugin().getLogger();
 
     private ConfigurationUtil() {
     }
 
-    public static void saveConfiguration(String configurationFile) {
-        File dataFolder = TubingPlugin.getPlugin().getDataFolder();
+    public static void saveConfigFile(TubingPlugin tubingPlugin, String configurationFile) {
+        File dataFolder = tubingPlugin.getDataFolder();
         String fullConfigResourcePath = (configurationFile).replace('\\', '/');
 
         InputStream in = getResource(fullConfigResourcePath);
         if (in == null) {
-            logger.log(Level.SEVERE, "Could not find configuration file " + fullConfigResourcePath);
+            tubingPlugin.getLogger().log(Level.SEVERE, "Could not find configuration file " + fullConfigResourcePath);
             return;
         }
 
@@ -55,7 +53,7 @@ public class ConfigurationUtil {
                 in.close();
             }
         } catch (IOException var10) {
-            logger.log(Level.SEVERE, "Could not save " + outFile.getName() + " to " + outFile, var10);
+            tubingPlugin.getLogger().log(Level.SEVERE, "Could not save " + outFile.getName() + " to " + outFile, var10);
         }
     }
 
@@ -74,18 +72,14 @@ public class ConfigurationUtil {
         }
     }
 
-    public static FileConfiguration loadConfiguration(String path) {
-        File file = Paths.get(TubingPlugin.getPlugin().getDataFolder() + File.separator + path).toFile();
-
+    public static Configuration loadConfiguration(TubingPlugin plugin, String path) {
+        File file = Paths.get(plugin.getDataFolder() + File.separator + path).toFile();
         Validate.notNull(file, "File cannot be null");
-        YamlConfiguration config = new YamlConfiguration();
         try {
-            config.load(file);
+            return ConfigurationProvider.getProvider(YamlConfiguration.class).load(file);
         } catch (Exception e) {
             throw new ConfigurationException("Cannot load " + file, e);
         }
-
-        return config;
     }
 
     public static Map<String, String> loadFilters(String filtersString) {

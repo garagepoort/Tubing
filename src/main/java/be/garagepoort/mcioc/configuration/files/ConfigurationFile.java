@@ -1,45 +1,27 @@
 package be.garagepoort.mcioc.configuration.files;
 
-import org.bukkit.configuration.file.FileConfiguration;
+import be.garagepoort.mcioc.configuration.config.Configuration;
 
 public class ConfigurationFile {
 
     private final String identifier;
     private final String path;
     private boolean ignoreUpdater = false;
-    private FileConfiguration fileConfiguration;
+    private Configuration fileConfiguration;
 
     public ConfigurationFile(String path) {
         this.identifier = getConfigId(path);
         this.path = path;
-        ConfigurationUtil.saveConfiguration(path);
-        this.fileConfiguration = ConfigurationUtil.loadConfiguration(path);
     }
 
     public ConfigurationFile(String path, String identifier) {
         this.identifier = identifier;
         this.path = path;
-        ConfigurationUtil.saveConfiguration(path);
-        this.fileConfiguration = ConfigurationUtil.loadConfiguration(path);
-    }
-
-    public ConfigurationFile(String path, FileConfiguration fileConfiguration) {
-        this.identifier = getConfigId(path);
-        this.path = path;
-        this.fileConfiguration = fileConfiguration;
-    }
-
-    public ConfigurationFile(String path, String identifier, FileConfiguration fileConfiguration) {
-        this.identifier = identifier;
-        this.path = path;
-        this.fileConfiguration = fileConfiguration;
     }
 
     public ConfigurationFile(String path, String identifier, boolean ignoreUpdater) {
         this.identifier = identifier;
         this.path = path;
-        ConfigurationUtil.saveConfiguration(path);
-        this.fileConfiguration = ConfigurationUtil.loadConfiguration(path);
         this.ignoreUpdater = ignoreUpdater;
     }
 
@@ -55,11 +37,11 @@ public class ConfigurationFile {
         return path;
     }
 
-    public void setFileConfiguration(FileConfiguration fileConfiguration) {
+    public void setFileConfiguration(Configuration fileConfiguration) {
         this.fileConfiguration = fileConfiguration;
     }
 
-    public FileConfiguration getFileConfiguration() {
+    public Configuration getFileConfiguration() {
         return fileConfiguration;
     }
 

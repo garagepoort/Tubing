@@ -1,15 +1,12 @@
 package be.garagepoort.mcioc.common;
 
-import be.garagepoort.mcioc.IocBean;
-import be.garagepoort.mcioc.TubingPlugin;
-import org.bukkit.configuration.file.FileConfiguration;
+import be.garagepoort.mcioc.configuration.files.ConfigMigrator;
+import be.garagepoort.mcioc.configuration.files.ConfigurationFile;
 
-import java.util.Map;
+import java.util.List;
 
-@IocBean
-public class TubingConfigurationProvider {
+public interface TubingConfigurationProvider {
+    List<ConfigMigrator> getConfigurationMigrators();
 
-    public Map<String, FileConfiguration> getConfigurations() {
-        return TubingPlugin.getPlugin().getFileConfigurations();
-    }
+    List<ConfigurationFile> getConfigurationFiles();
 }

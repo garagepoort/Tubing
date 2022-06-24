@@ -1,7 +1,7 @@
 package be.garagepoort.mcioc;
 
+import be.garagepoort.mcioc.configuration.config.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.configuration.file.FileConfiguration;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 public class IocConditionalPropertyFilter {
 
-    public boolean isValidBean(List<Class> beanAnnotations, Class clazz, Map<String, FileConfiguration> configs) {
+    public boolean isValidBean(List<Class> beanAnnotations, Class clazz, Map<String, Configuration> configs) {
         try {
             Annotation annotation = Arrays.stream(clazz.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst()
                 .orElseThrow(() -> new RuntimeException("Invalid Tubing configuration. No bean annotation on class: " + clazz.getName()));
@@ -28,7 +28,7 @@ public class IocConditionalPropertyFilter {
         }
     }
 
-    private boolean isValid(Map<String, FileConfiguration> configs, String conditionalOnProperty) {
+    private boolean isValid(Map<String, Configuration> configs, String conditionalOnProperty) {
         if (conditionalOnProperty.startsWith("isNotEmpty")) {
             String key = StringUtils.substringBetween(conditionalOnProperty, "(", ")");
 

@@ -1,4 +1,4 @@
-package be.garagepoort.mcioc;
+package be.garagepoort.mcioc.load;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,9 +6,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface IocListener {
-    String conditionalOnProperty() default "";
-
-    boolean priority() default false;
+@Target({ElementType.FIELD, ElementType.PARAMETER})
+public @interface InjectTubingPlugin {
 }
