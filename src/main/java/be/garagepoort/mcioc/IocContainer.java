@@ -2,19 +2,15 @@ package be.garagepoort.mcioc;
 
 import be.garagepoort.mcioc.configuration.ConfigProperty;
 import be.garagepoort.mcioc.configuration.ConfigTransformer;
+import be.garagepoort.mcioc.configuration.ConfigurationLoader;
 import be.garagepoort.mcioc.configuration.PropertyInjector;
+import be.garagepoort.mcioc.configuration.TubingPluginInjector;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
+import be.garagepoort.mcioc.load.InjectTubingPlugin;
 import be.garagepoort.mcioc.load.TubingBeanAnnotationRegistrator;
-import org.bukkit.Bukkit;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.event.Listener;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -34,35 +30,30 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static be.garagepoort.mcioc.configuration.PropertyInjector.injectConfigurationProperties;
-
 public class IocContainer {
 
     private List<Class> beanAnnotations;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(IocContainer.class);
     private final Map<Class, Object> beans = new HashMap<>();
     private final IocConditionalPropertyFilter iocConditionalPropertyFilter = new IocConditionalPropertyFilter();
     private final IocConditionalFilter iocConditionalFilter = new IocConditionalFilter();
     private Reflections reflections;
-    private Map<String, FileConfiguration> configs;
+    private TubingPlugin tubingPlugin;
+    private ConfigurationLoader configurationLoader;
 
-    public void init(JavaPlugin javaPlugin, Map<String, FileConfiguration> configs) {
+    public void init(TubingPlugin tubingPlugin) {
         try {
-            reflections = new Reflections(javaPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
-            this.configs = configs;
+            this.tubingPlugin = tubingPlugin;
+//            reflections = new Reflections(tubingPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
+            reflections = new Reflections(new TypeAnnotationsScanner(), new SubTypesScanner());
             beanAnnotations = new ArrayList<>();
             for (Class<? extends TubingBeanAnnotationRegistrator> aClass : reflections.getSubTypesOf(TubingBeanAnnotationRegistrator.class)) {
                 Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
                 TubingBeanAnnotationRegistrator tubingBeanAnnotationRegistrator = (TubingBeanAnnotationRegistrator) declaredConstructor.newInstance();
                 beanAnnotations.addAll(tubingBeanAnnotationRegistrator.getAnnotations());
             }
-            loadIocBeans(configs);
-            loadCommandHandlerBeans(javaPlugin);
-            loadListenerBeans(javaPlugin);
-            loadMessageListenerBeans(javaPlugin);
+            loadIocBeans();
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-           throw new RuntimeException("Tubing could not load the IOC container", e);
+            throw new RuntimeException("Tubing could not load the IOC container", e);
         }
     }
 
@@ -70,7 +61,7 @@ public class IocContainer {
         return reflections;
     }
 
-    private void loadIocBeans(Map<String, FileConfiguration> configs) {
+    private void loadIocBeans() {
         try {
             Set<Class<?>> configurationClasses = reflections.getTypesAnnotatedWith(TubingConfiguration.class);
             List<Method> providers = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, IocBeanProvider.class).stream()).collect(Collectors.toList());
@@ -81,9 +72,7 @@ public class IocContainer {
                 allBeans.addAll(reflections.getTypesAnnotatedWith(beanAnnotation));
             }
 
-            List<Class<?>> typesAnnotatedWith = allBeans.stream()
-                .filter(a -> iocConditionalPropertyFilter.isValidBean(beanAnnotations, a, configs))
-                .filter(iocConditionalFilter::isValidBean)
+            List<Class<?>> classesWithBeanAnnotations = allBeans.stream()
                 .sorted((o1, o2) -> {
                     Annotation annotation1 = Arrays.stream(o1.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst().get();
                     Annotation annotation2 = Arrays.stream(o2.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst().get();
@@ -98,7 +87,15 @@ public class IocContainer {
                 .collect(Collectors.toList());
 
             Set<Class<?>> providedBeans = providers.stream().map(Method::getReturnType).collect(Collectors.toCollection(LinkedHashSet::new));
-            Set<Class<?>> validBeans = Stream.concat(typesAnnotatedWith.stream(), providedBeans.stream()).collect(Collectors.toCollection(LinkedHashSet::new));
+            Set<Class<?>> validBeans = Stream.concat(classesWithBeanAnnotations.stream(), providedBeans.stream()).collect(Collectors.toCollection(LinkedHashSet::new));
+
+            configurationLoader = (ConfigurationLoader) instantiateBean(reflections, ConfigurationLoader.class, validBeans, providers, multiProviders, false);
+            classesWithBeanAnnotations = classesWithBeanAnnotations.stream()
+                .filter(a -> iocConditionalPropertyFilter.isValidBean(beanAnnotations, a, getConfigurationFiles()))
+                .filter(iocConditionalFilter::isValidBean)
+                .collect(Collectors.toList());
+            validBeans = Stream.concat(classesWithBeanAnnotations.stream(), providedBeans.stream()).collect(Collectors.toCollection(LinkedHashSet::new));
+
             for (Class<?> aClass : validBeans) {
                 instantiateBean(reflections, aClass, validBeans, providers, multiProviders, false);
             }
@@ -113,55 +110,8 @@ public class IocContainer {
         }
     }
 
-    private void loadCommandHandlerBeans(JavaPlugin javaPlugin) {
-        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocCommandHandler.class);
-
-        for (Class<?> aClass : typesAnnotatedWith) {
-            if (!CommandExecutor.class.isAssignableFrom(aClass)) {
-                throw new IocException("IocCommandHandler annotation can only be used on CommandExecutors");
-            }
-            if (!beans.containsKey(aClass)) {
-                continue;
-            }
-            CommandExecutor bean = (CommandExecutor) this.get(aClass);
-            IocCommandHandler annotation = aClass.getAnnotation(IocCommandHandler.class);
-            javaPlugin.getCommand(annotation.value()).setExecutor(bean);
-        }
-    }
-
-    private void loadListenerBeans(JavaPlugin javaPlugin) {
-        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocListener.class);
-
-        for (Class<?> aClass : typesAnnotatedWith) {
-            if (!Listener.class.isAssignableFrom(aClass)) {
-                throw new IocException("IocListener annotation can only be used on bukkit Listeners. Failing class [" + aClass + "]");
-            }
-            if (!beans.containsKey(aClass)) {
-                continue;
-            }
-            Listener bean = (Listener) this.get(aClass);
-            Bukkit.getPluginManager().registerEvents(bean, javaPlugin);
-        }
-    }
-
-    private void loadMessageListenerBeans(JavaPlugin javaPlugin) {
-        Set<Class<?>> typesAnnotatedWith = reflections.getTypesAnnotatedWith(IocMessageListener.class);
-
-        for (Class<?> aClass : typesAnnotatedWith) {
-            if (!PluginMessageListener.class.isAssignableFrom(aClass)) {
-                throw new IocException("IocMessageListener annotation can only be used on bukkit PluginMessageListeners");
-            }
-            if (!beans.containsKey(aClass)) {
-                continue;
-            }
-            PluginMessageListener bean = (PluginMessageListener) this.get(aClass);
-            IocMessageListener annotation = aClass.getAnnotation(IocMessageListener.class);
-            javaPlugin.getServer().getMessenger().registerIncomingPluginChannel(javaPlugin, annotation.channel(), bean);
-        }
-    }
-
     private Object instantiateBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, List<Method> providedBeans, List<Method> multiProviders, boolean multiProvider) throws InvocationTargetException, IllegalAccessException {
-        LOGGER.debug("[MC-IOC] Instantiating bean [{}]", aClass.getName());
+//        tubingPlugin.getLogger().info("[MC-IOC] Instantiating bean [" + aClass.getName() + "]");
 
         if (multiProvider) {
             beans.putIfAbsent(aClass, new ArrayList<>());
@@ -260,19 +210,27 @@ public class IocContainer {
             throw new IocException("Cannot instantiate bean with type " + aClass.getName() + ". Only one constructor should be defined");
         }
 
-        LOGGER.debug("[MC-IOC] Start creation of bean [{}]", aClass.getName());
+//        tubingPlugin.getLogger().info("[MC-IOC] Start creation of bean [" + aClass.getName() + "]");
         Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
         List<Object> constructorParams = buildParams(reflections, validBeans, providers, multiProviders, declaredConstructor.getParameterTypes(), declaredConstructor.getParameterAnnotations());
 
         try {
-            LOGGER.debug("[MC-IOC] Creating new bean [{}] with constructor arguments [{}]", aClass.getName(), constructorParams.stream().map(d -> d.getClass().getName()).collect(Collectors.joining(",")));
+//            tubingPlugin.getLogger().info("[MC-IOC] Creating new bean [" + aClass.getName() + "] with constructor arguments [" + constructorParams.stream().map(d -> d.getClass().getName()).collect(Collectors.joining(",")) + "]");
             Object bean = declaredConstructor.newInstance(constructorParams.toArray());
-            injectConfigurationProperties(bean, configs);
+            PropertyInjector.injectConfigurationProperties(bean, getConfigurationFiles());
+            TubingPluginInjector.inject(bean, tubingPlugin);
             beans.putIfAbsent(aClass, bean);
             return bean;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new IocException("Cannot instantiate bean with type " + aClass.getName() + ".", e);
         }
+    }
+
+    private Map<String, FileConfiguration> getConfigurationFiles() {
+        if (configurationLoader == null) {
+            return Collections.emptyMap();
+        }
+        return configurationLoader.getConfigurationFiles();
     }
 
     private Object getProvidedBean(Reflections reflections, Class<?> aClass, Set<Class<?>> validBeans, List<Method> providers, List<Method> multiProviders) throws InvocationTargetException, IllegalAccessException {
@@ -314,12 +272,17 @@ public class IocContainer {
             Optional<ConfigProperty> configAnnotation = Arrays.stream(annotations)
                 .filter(a -> a.annotationType().equals(ConfigProperty.class))
                 .map(a -> (ConfigProperty) a).findFirst();
+            Optional<InjectTubingPlugin> tubingPluginAnnotation = Arrays.stream(annotations)
+                .filter(a -> a.annotationType().equals(InjectTubingPlugin.class))
+                .map(a -> (InjectTubingPlugin) a).findFirst();
 
-            if (configAnnotation.isPresent()) {
+            if (tubingPluginAnnotation.isPresent()) {
+                constructorParams.add(tubingPlugin);
+            } else if (configAnnotation.isPresent()) {
                 Optional<ConfigTransformer> configTransformerAnnotation = Arrays.stream(annotations)
                     .filter(a -> a.annotationType().equals(ConfigTransformer.class))
                     .map(a -> (ConfigTransformer) a).findFirst();
-                Optional<Object> configValue = PropertyInjector.parseConfig(configAnnotation.get(), configTransformerAnnotation.orElse(null), configs);
+                Optional<Object> configValue = PropertyInjector.parseConfig(configAnnotation.get(), configTransformerAnnotation.orElse(null), getConfigurationFiles());
                 constructorParams.add(configValue.orElse(null));
             } else if (multiAnnotation.isPresent()) {
                 IocMulti iocMulti = (IocMulti) multiAnnotation.get();

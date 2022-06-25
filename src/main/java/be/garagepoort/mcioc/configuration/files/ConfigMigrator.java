@@ -1,6 +1,6 @@
 package be.garagepoort.mcioc.configuration.files;
 
-import org.bukkit.configuration.file.FileConfiguration;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 
 import java.util.List;
 

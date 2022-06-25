@@ -2,7 +2,7 @@ package be.garagepoort.mcioc.configuration;
 
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
-import org.bukkit.configuration.file.FileConfiguration;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;

@@ -1,118 +1,31 @@
 package be.garagepoort.mcioc;
 
-import be.garagepoort.mcioc.configuration.files.AutoUpdater;
-import be.garagepoort.mcioc.configuration.files.ConfigMigrator;
-import be.garagepoort.mcioc.configuration.files.ConfigurationFile;
-import be.garagepoort.mcioc.load.BeforeTubingReload;
 import be.garagepoort.mcioc.load.OnLoad;
-import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.event.HandlerList;
-import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.InputStream;
-import java.util.Collections;
+import java.io.File;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.logging.Logger;
 
-public abstract class TubingPlugin extends JavaPlugin {
+public interface TubingPlugin {
 
-    private static TubingPlugin tubingPlugin;
-    private IocContainer iocContainer = new IocContainer();
-    private List<ConfigurationFile> configurationFiles;
+    String getName();
 
-    public static TubingPlugin getPlugin() {
-        return tubingPlugin;
-    }
+    ClassLoader getPluginClassLoader();
 
-    @Override
-    public void onEnable() {
-        tubingPlugin = this;
-        beforeEnable();
-        if (!loadConfig()) {
-            Bukkit.getPluginManager().disablePlugin(this);
-            return;
-        }
-        iocContainer.init(this, getFileConfigurations());
+    File getDataFolder();
+
+    Logger getLogger();
+
+    IocContainer getIocContainer();
+
+    default IocContainer initIocContainer() {
+        IocContainer iocContainer = new IocContainer();
+        iocContainer.init(this);
         List<OnLoad> onloads = iocContainer.getList(OnLoad.class);
         if (onloads != null) {
-            onloads.forEach(onLoad -> onLoad.load(this));
+            onloads.forEach(onLoad -> onLoad.load(iocContainer));
         }
-
-        enable();
-    }
-
-    @Override
-    public void onDisable() {
-        disable();
-    }
-
-    public void reload() {
-        List<BeforeTubingReload> beforeTubingReloads = iocContainer.getList(BeforeTubingReload.class);
-        if (beforeTubingReloads != null) {
-            beforeTubingReloads.forEach(onLoad -> onLoad.execute(this));
-        }
-        beforeReload();
-        loadConfig();
-        reloadConfig();
-        HandlerList.unregisterAll(this);
-        getServer().getMessenger().unregisterIncomingPluginChannel(this);
-        getServer().getMessenger().unregisterOutgoingPluginChannel(this);
-
-        iocContainer = new IocContainer();
-        iocContainer.init(this, getFileConfigurations());
-        List<OnLoad> onloads = iocContainer.getList(OnLoad.class);
-        if (onloads != null) {
-            onloads.forEach(onLoad -> onLoad.load(this));
-        }
-    }
-
-    protected void beforeReload() {
-    }
-
-    protected void beforeEnable() {
-    }
-
-    protected abstract void enable();
-
-    protected abstract void disable();
-
-    public Map<String, FileConfiguration> getFileConfigurations() {
-        return configurationFiles.stream()
-            .collect(Collectors.toMap(ConfigurationFile::getIdentifier, ConfigurationFile::getFileConfiguration, (a, b) -> a));
-    }
-
-    public List<ConfigMigrator> getConfigurationMigrators() {
-        return Collections.emptyList();
-    }
-
-    public IocContainer getIocContainer() {
         return iocContainer;
     }
 
-    public List<ConfigurationFile> getConfigurationFiles() {
-        InputStream defConfigStream = this.getResource("config.yml");
-        if (defConfigStream != null) {
-            return Collections.singletonList(new ConfigurationFile("config.yml"));
-        } else {
-            return Collections.emptyList();
-        }
-    }
-
-    private boolean loadConfig() {
-        configurationFiles = getConfigurationFiles();
-        if (configurationFiles.isEmpty()) {
-            return true;
-        }
-        saveDefaultConfig();
-        AutoUpdater.runMigrations(configurationFiles, getConfigurationMigrators());
-        for (ConfigurationFile c : configurationFiles) {
-            if (!AutoUpdater.updateConfig(c)) {
-                Bukkit.getPluginManager().disablePlugin(this);
-                return false;
-            }
-        }
-        return true;
-    }
 }

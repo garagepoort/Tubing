@@ -1,7 +1,7 @@
 package be.garagepoort.mcioc;
 
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.configuration.file.FileConfiguration;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -35,15 +35,13 @@ public class IocConditionalPropertyFilter {
             String configValue = ReflectionUtils.getConfigStringValue(key, configs)
                 .orElseThrow(() -> new IocException("ConditionOnProperty referencing an unknown property [" + key + "]"));
             return StringUtils.isNotEmpty(configValue);
-        }
-        else if (conditionalOnProperty.startsWith("isEmpty")) {
+        } else if (conditionalOnProperty.startsWith("isEmpty")) {
             String key = StringUtils.substringBetween(conditionalOnProperty, "(", ")");
 
             String configValue = ReflectionUtils.getConfigStringValue(key, configs)
                 .orElseThrow(() -> new IocException("ConditionOnProperty referencing an unknown property [" + key + "]"));
             return StringUtils.isBlank(configValue);
-        }
-        else {
+        } else {
             String[] split = conditionalOnProperty.split("=", 2);
             String key = split[0];
             String value = split[1];

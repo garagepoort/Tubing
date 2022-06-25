@@ -1,6 +1,6 @@
 package be.garagepoort.mcioc;
 
-import org.bukkit.configuration.file.FileConfiguration;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

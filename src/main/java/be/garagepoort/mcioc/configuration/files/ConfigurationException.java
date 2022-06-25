@@ -4,8 +4,12 @@ import be.garagepoort.mcioc.TubingPlugin;
 
 public class ConfigurationException extends RuntimeException {
 
+    public ConfigurationException(TubingPlugin tubingPlugin, String message) {
+        super("Invalid " + tubingPlugin.getName() + " configuration: [" + message + "]");
+    }
+
     public ConfigurationException(String message) {
-        super("Invalid " + TubingPlugin.getPlugin().getName() + " configuration: [" + message + "]");
+        super("Invalid configuration: [" + message + "]");
     }
 
     public ConfigurationException(String message, Throwable e) {

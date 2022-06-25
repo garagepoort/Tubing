@@ -1,10 +1,10 @@
 package be.garagepoort.mcioc.configuration.files;
 
 import be.garagepoort.mcioc.TubingPlugin;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
+import be.garagepoort.mcioc.configuration.yaml.configuration.ConfigurationSection;
+import be.garagepoort.mcioc.configuration.yaml.configuration.InvalidConfigurationException;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,13 +21,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class AutoUpdater {
 
-    public static boolean updateConfig(ConfigurationFile configurationFile) {
+    public static FileConfiguration updateConfig(TubingPlugin tubingPlugin, ConfigurationFile configurationFile) {
         if (configurationFile.isIgnoreUpdater()) {
-            return true;
+            return configurationFile.getFileConfiguration();
         }
 
         try {
-            validateConfigFile(configurationFile.getPath());
+            validateConfigFile(tubingPlugin, configurationFile.getPath());
 
             FileConfiguration config = configurationFile.getFileConfiguration();
             FileConfiguration newConfig = new YamlConfiguration();
@@ -51,22 +51,22 @@ public class AutoUpdater {
                 }
             });
 
-            File file = new File(TubingPlugin.getPlugin().getDataFolder() + File.separator + configurationFile.getPath());
+            File file = new File(tubingPlugin.getDataFolder() + File.separator + configurationFile.getPath());
             newConfig.save(file);
             configurationFile.setFileConfiguration(newConfig);
-            return true;
+            return newConfig;
         } catch (InvalidConfigurationException | IOException | ConfigurationException e) {
-            TubingPlugin.getPlugin().getLogger().severe("Configuration file is INVALID!!! Disabling " + TubingPlugin.getPlugin().getLogger() + "!");
-            TubingPlugin.getPlugin().getLogger().severe("Full error [" + e.getMessage() + "]");
-            return false;
+           tubingPlugin.getLogger().severe("Configuration file is INVALID!!! Disabling " +tubingPlugin.getLogger() + "!");
+           tubingPlugin.getLogger().severe("Full error [" + e.getMessage() + "]");
+            return null;
         }
     }
 
-    public static void runMigrations(List<ConfigurationFile> fileConfigurations, List<ConfigMigrator> configMigrators) {
+    public static void runMigrations(TubingPlugin tubingPlugin, List<ConfigurationFile> fileConfigurations, List<ConfigMigrator> configMigrators) {
         try {
             configMigrators.forEach(m -> m.migrate(fileConfigurations));
             for (ConfigurationFile configurationFile : fileConfigurations) {
-                File file = new File(TubingPlugin.getPlugin().getDataFolder() + File.separator + configurationFile.getPath());
+                File file = new File(tubingPlugin.getDataFolder() + File.separator + configurationFile.getPath());
                 configurationFile.getFileConfiguration().options().copyDefaults(true);
                 configurationFile.getFileConfiguration().save(file);
             }
@@ -86,8 +86,8 @@ public class AutoUpdater {
         return configurations;
     }
 
-    private static void validateConfigFile(String filename) throws IOException, InvalidConfigurationException {
-        validateConfigFile(TubingPlugin.getPlugin().getDataFolder(), filename);
+    private static void validateConfigFile(TubingPlugin tubingPlugin, String filename) throws IOException, InvalidConfigurationException {
+        validateConfigFile(tubingPlugin.getDataFolder(), filename);
     }
 
     private static void validateConfigFile(File folder, String filename) throws IOException, InvalidConfigurationException {

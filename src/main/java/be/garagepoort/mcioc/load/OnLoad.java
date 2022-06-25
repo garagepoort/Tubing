@@ -1,7 +1,7 @@
 package be.garagepoort.mcioc.load;
 
-import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.IocContainer;
 
 public interface OnLoad {
-    void load(TubingPlugin tubingPlugin);
+    void load(IocContainer iocContainer);
 }
