@@ -43,7 +43,8 @@ public class IocContainer {
     public void init(TubingPlugin tubingPlugin) {
         try {
             this.tubingPlugin = tubingPlugin;
-            reflections = new Reflections(tubingPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
+//            reflections = new Reflections(tubingPlugin.getClass().getPackage().getName(), new TypeAnnotationsScanner(), new SubTypesScanner());
+            reflections = new Reflections(new TypeAnnotationsScanner(), new SubTypesScanner());
             beanAnnotations = new ArrayList<>();
             for (Class<? extends TubingBeanAnnotationRegistrator> aClass : reflections.getSubTypesOf(TubingBeanAnnotationRegistrator.class)) {
                 Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
