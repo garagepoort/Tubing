@@ -1,9 +1,8 @@
 package be.garagepoort.mcioc.configuration.files;
 
 import be.garagepoort.mcioc.TubingPlugin;
-import be.garagepoort.mcioc.configuration.config.Configuration;
-import be.garagepoort.mcioc.configuration.config.ConfigurationProvider;
-import be.garagepoort.mcioc.configuration.config.YamlConfiguration;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.YamlConfiguration;
 import org.apache.commons.lang.Validate;
 
 import java.io.File;
@@ -72,14 +71,18 @@ public class ConfigurationUtil {
         }
     }
 
-    public static Configuration loadConfiguration(TubingPlugin plugin, String path) {
+    public static FileConfiguration loadConfiguration(TubingPlugin plugin, String path) {
         File file = Paths.get(plugin.getDataFolder() + File.separator + path).toFile();
+
         Validate.notNull(file, "File cannot be null");
+        YamlConfiguration config = new YamlConfiguration();
         try {
-            return ConfigurationProvider.getProvider(YamlConfiguration.class).load(file);
+            config.load(file);
         } catch (Exception e) {
             throw new ConfigurationException("Cannot load " + file, e);
         }
+
+        return config;
     }
 
     public static Map<String, String> loadFilters(String filtersString) {

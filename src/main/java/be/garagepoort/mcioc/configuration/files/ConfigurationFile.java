@@ -1,13 +1,13 @@
 package be.garagepoort.mcioc.configuration.files;
 
-import be.garagepoort.mcioc.configuration.config.Configuration;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 
 public class ConfigurationFile {
 
     private final String identifier;
     private final String path;
     private boolean ignoreUpdater = false;
-    private Configuration fileConfiguration;
+    private FileConfiguration fileConfiguration;
 
     public ConfigurationFile(String path) {
         this.identifier = getConfigId(path);
@@ -37,11 +37,11 @@ public class ConfigurationFile {
         return path;
     }
 
-    public void setFileConfiguration(Configuration fileConfiguration) {
+    public void setFileConfiguration(FileConfiguration fileConfiguration) {
         this.fileConfiguration = fileConfiguration;
     }
 
-    public Configuration getFileConfiguration() {
+    public FileConfiguration getFileConfiguration() {
         return fileConfiguration;
     }
 

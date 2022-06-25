@@ -2,7 +2,7 @@ package be.garagepoort.mcioc.configuration;
 
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
-import be.garagepoort.mcioc.configuration.config.Configuration;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -14,11 +14,11 @@ import java.util.Map;
 import java.util.Optional;
 
 public class PropertyInjector {
-    public static void injectConfigurationProperties(Object bean, Map<String, Configuration> configs) {
+    public static void injectConfigurationProperties(Object bean, Map<String, FileConfiguration> configs) {
         setProperties(configs, bean);
     }
 
-    private static void setProperties(Map<String, Configuration> configs, Object o) {
+    private static void setProperties(Map<String, FileConfiguration> configs, Object o) {
         try {
             for (Field f : getAllFields(new LinkedList<>(), o.getClass())) {
                 if (!f.isAnnotationPresent(ConfigProperty.class)) {
@@ -40,7 +40,7 @@ public class PropertyInjector {
         }
     }
 
-    public static Optional<Object> parseConfig(ConfigProperty configAnnotation, ConfigTransformer configTransformer, Map<String, Configuration> configs) {
+    public static Optional<Object> parseConfig(ConfigProperty configAnnotation, ConfigTransformer configTransformer, Map<String, FileConfiguration> configs) {
         try {
             Optional<Object> configValue = ReflectionUtils.getConfigValue(configAnnotation.value(), configs);
             if (!configValue.isPresent()) {

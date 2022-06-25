@@ -1,6 +1,6 @@
 package be.garagepoort.mcioc;
 
-import be.garagepoort.mcioc.configuration.config.Configuration;
+import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -28,7 +28,7 @@ public class ReflectionUtils {
         return methods;
     }
 
-    public static <T> Optional<T> getConfigValue(String identifier, Map<String, Configuration> configs) {
+    public static <T> Optional<T> getConfigValue(String identifier, Map<String, FileConfiguration> configs) {
 
         identifier = replaceNestedValues(identifier, configs);
 
@@ -43,7 +43,7 @@ public class ReflectionUtils {
         return Optional.ofNullable((T) configs.get(configFileId).get(path));
     }
 
-    public static Optional<String> getConfigStringValue(String identifier, Map<String, Configuration> configs) {
+    public static Optional<String> getConfigStringValue(String identifier, Map<String, FileConfiguration> configs) {
         identifier = replaceNestedValues(identifier, configs);
         String configFileId = "config";
         String path = identifier;
@@ -56,7 +56,7 @@ public class ReflectionUtils {
         return Optional.ofNullable(configs.get(configFileId).getString(path));
     }
 
-    private static String replaceNestedValues(String identifier, Map<String, Configuration> configs) {
+    private static String replaceNestedValues(String identifier, Map<String, FileConfiguration> configs) {
         String regexString = Pattern.quote("%") + "(.*?)" + Pattern.quote("%");
         Pattern pattern = Pattern.compile(regexString);
         Matcher matcher = pattern.matcher(identifier);

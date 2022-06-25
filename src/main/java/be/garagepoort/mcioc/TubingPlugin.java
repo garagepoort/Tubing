@@ -23,7 +23,7 @@ public interface TubingPlugin {
         iocContainer.init(this);
         List<OnLoad> onloads = iocContainer.getList(OnLoad.class);
         if (onloads != null) {
-            onloads.forEach(onLoad -> onLoad.load(this));
+            onloads.forEach(onLoad -> onLoad.load(iocContainer));
         }
         return iocContainer;
     }
