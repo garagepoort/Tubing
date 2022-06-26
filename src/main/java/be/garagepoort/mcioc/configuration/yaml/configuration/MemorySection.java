@@ -1,8 +1,7 @@
 package be.garagepoort.mcioc.configuration.yaml.configuration;
 
+import be.garagepoort.mcioc.configuration.files.ConfigurationException;
 import be.garagepoort.mcioc.configuration.yaml.configuration.serialization.ConfigurationSerializable;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -57,14 +56,23 @@ public class MemorySection implements ConfigurationSection {
      *                                  if parent contains no root Configuration.
      */
     protected MemorySection(ConfigurationSection parent, String path) {
-        Preconditions.checkArgument(parent != null, "Parent cannot be null");
-        Preconditions.checkArgument(path != null, "Path cannot be null");
+        if(parent ==null) {
+            throw new ConfigurationException("parent must not be null");
+        }
+
+        if(path ==null) {
+            throw new ConfigurationException("path must not be null");
+        }
+
 
         this.path = path;
         this.parent = parent;
         this.root = parent.getRoot();
 
-        Preconditions.checkArgument(root != null, "Path cannot be orphaned");
+        if(root ==null) {
+            throw new ConfigurationException("path cannot be orphaned");
+        }
+
 
         this.fullPath = createPath(parent, path);
     }
@@ -155,7 +163,10 @@ public class MemorySection implements ConfigurationSection {
 
     @Override
     public void addDefault(String path, Object value) {
-        Preconditions.checkArgument(path != null, "Path cannot be null");
+         if(path ==null) {
+            throw new ConfigurationException("path must not be null");
+        }
+
 
         Configuration root = getRoot();
         if (root == null) {
@@ -184,7 +195,9 @@ public class MemorySection implements ConfigurationSection {
 
     @Override
     public void set(String path, Object value) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(path), "Cannot set to an empty path");
+        if(path ==null) {
+            throw new ConfigurationException("path must not be null");
+        }
 
         Configuration root = getRoot();
         if (root == null) {
@@ -236,7 +249,10 @@ public class MemorySection implements ConfigurationSection {
     @Override
 
     public Object get(String path, Object def) {
-        Preconditions.checkArgument(path != null, "Path cannot be null");
+         if(path ==null) {
+            throw new ConfigurationException("path must not be null");
+        }
+
 
         if (path.length() == 0) {
             return this;
@@ -274,7 +290,10 @@ public class MemorySection implements ConfigurationSection {
     @Override
 
     public ConfigurationSection createSection(String path) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(path), "Cannot create section at empty path");
+        if(path ==null) {
+            throw new ConfigurationException("path must not be null");
+        }
+
         Configuration root = getRoot();
         if (root == null) {
             throw new IllegalStateException("Cannot create section without a root");
@@ -705,14 +724,20 @@ public class MemorySection implements ConfigurationSection {
 
     @Override
     public <T extends Object> T getObject(String path, Class<T> clazz) {
-        Preconditions.checkArgument(clazz != null, "Class cannot be null");
+         if(clazz ==null) {
+            throw new ConfigurationException("clazz must not be null");
+        }
+
         Object def = getDefault(path);
         return getObject(path, clazz, (def != null && clazz.isInstance(def)) ? clazz.cast(def) : null);
     }
 
     @Override
     public <T extends Object> T getObject(String path, Class<T> clazz, T def) {
-        Preconditions.checkArgument(clazz != null, "Class cannot be null");
+         if(clazz ==null) {
+            throw new ConfigurationException("clazz must not be null");
+        }
+
         Object val = get(path, def);
         return (val != null && clazz.isInstance(val)) ? clazz.cast(val) : def;
     }
@@ -752,7 +777,10 @@ public class MemorySection implements ConfigurationSection {
     }
 
     protected Object getDefault(String path) {
-        Preconditions.checkArgument(path != null, "Path cannot be null");
+         if(path ==null) {
+            throw new ConfigurationException("path must not be null");
+        }
+
 
         Configuration root = getRoot();
         Configuration defaults = root == null ? null : root.getDefaults();
@@ -837,7 +865,10 @@ public class MemorySection implements ConfigurationSection {
      */
 
     public static String createPath(ConfigurationSection section, String key, ConfigurationSection relativeTo) {
-        Preconditions.checkArgument(section != null, "Cannot create path without a section");
+        if(section ==null) {
+            throw new ConfigurationException("section must not be null");
+        }
+
         Configuration root = section.getRoot();
         if (root == null) {
             throw new IllegalStateException("Cannot create path without a root");
@@ -894,7 +925,10 @@ public class MemorySection implements ConfigurationSection {
     }
 
     private SectionPathData getSectionPathData(String path) {
-        Preconditions.checkArgument(path != null, "Path cannot be null");
+         if(path ==null) {
+            throw new ConfigurationException("path must not be null");
+        }
+
 
         Configuration root = getRoot();
         if (root == null) {

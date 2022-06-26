@@ -3,7 +3,6 @@ package be.garagepoort.mcioc.configuration.files;
 import be.garagepoort.mcioc.TubingPlugin;
 import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 import be.garagepoort.mcioc.configuration.yaml.configuration.file.YamlConfiguration;
-import org.apache.commons.lang.Validate;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -74,7 +73,6 @@ public class ConfigurationUtil {
     public static FileConfiguration loadConfiguration(TubingPlugin plugin, String path) {
         File file = Paths.get(plugin.getDataFolder() + File.separator + path).toFile();
 
-        Validate.notNull(file, "File cannot be null");
         YamlConfiguration config = new YamlConfiguration();
         try {
             config.load(file);

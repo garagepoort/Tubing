@@ -1,7 +1,6 @@
 package be.garagepoort.mcioc;
 
 import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
-import org.apache.commons.lang.StringUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -18,7 +17,7 @@ public class IocConditionalPropertyFilter {
                 .orElseThrow(() -> new RuntimeException("Invalid Tubing configuration. No bean annotation on class: " + clazz.getName()));
             String conditionalOnProperty = (String) annotation.annotationType().getMethod("conditionalOnProperty").invoke(annotation);
 
-            if (!StringUtils.isEmpty(conditionalOnProperty)) {
+            if (!isEmpty(conditionalOnProperty)) {
                 List<String> conditionSections = Arrays.stream(conditionalOnProperty.split("&&")).map(String::trim).collect(Collectors.toList());
                 return conditionSections.stream().allMatch(c -> isValid(configs, c));
             }
@@ -30,17 +29,17 @@ public class IocConditionalPropertyFilter {
 
     private boolean isValid(Map<String, FileConfiguration> configs, String conditionalOnProperty) {
         if (conditionalOnProperty.startsWith("isNotEmpty")) {
-            String key = StringUtils.substringBetween(conditionalOnProperty, "(", ")");
+            String key = substringBetween(conditionalOnProperty, "(", ")");
 
             String configValue = ReflectionUtils.getConfigStringValue(key, configs)
                 .orElseThrow(() -> new IocException("ConditionOnProperty referencing an unknown property [" + key + "]"));
-            return StringUtils.isNotEmpty(configValue);
+            return isNotEmpty(configValue);
         } else if (conditionalOnProperty.startsWith("isEmpty")) {
-            String key = StringUtils.substringBetween(conditionalOnProperty, "(", ")");
+            String key = substringBetween(conditionalOnProperty, "(", ")");
 
             String configValue = ReflectionUtils.getConfigStringValue(key, configs)
                 .orElseThrow(() -> new IocException("ConditionOnProperty referencing an unknown property [" + key + "]"));
-            return StringUtils.isBlank(configValue);
+            return isBlank(configValue);
         } else {
             String[] split = conditionalOnProperty.split("=", 2);
             String key = split[0];
@@ -52,4 +51,45 @@ public class IocConditionalPropertyFilter {
             return configValue.equalsIgnoreCase(value);
         }
     }
+
+    private String substringBetween(String str, String open, String close) {
+        if (str != null && open != null && close != null) {
+            int start = str.indexOf(open);
+            if (start != -1) {
+                int end = str.indexOf(close, start + open.length());
+                if (end != -1) {
+                    return str.substring(start + open.length(), end);
+                }
+            }
+
+            return null;
+        } else {
+            return null;
+        }
+    }
+
+    private boolean isEmpty(String str) {
+        return str == null || str.length() == 0;
+    }
+
+    private boolean isNotEmpty(String str) {
+        return !isEmpty(str);
+    }
+
+    private boolean isBlank(String str) {
+        int strLen;
+        if (str != null && (strLen = str.length()) != 0) {
+            for(int i = 0; i < strLen; ++i) {
+                if (!Character.isWhitespace(str.charAt(i))) {
+                    return false;
+                }
+            }
+
+            return true;
+        } else {
+            return true;
+        }
+    }
+
+
 }

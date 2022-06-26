@@ -1,6 +1,7 @@
 package be.garagepoort.mcioc.configuration.yaml.configuration.serialization;
 
-import com.google.common.base.Preconditions;
+
+import be.garagepoort.mcioc.configuration.files.ConfigurationException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -82,7 +83,10 @@ public class ConfigurationSerialization {
     }
 
     public ConfigurationSerializable deserialize(Map<String, ?> args) {
-        Preconditions.checkArgument(args != null, "Args must not be null");
+        if(args ==null) {
+            throw new ConfigurationException("args must not be null");
+        }
+
 
         ConfigurationSerializable result = null;
         Method method = null;

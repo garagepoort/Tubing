@@ -1,6 +1,6 @@
 package be.garagepoort.mcioc.configuration.yaml.configuration;
 
-import com.google.common.base.Preconditions;
+import be.garagepoort.mcioc.configuration.files.ConfigurationException;
 
 import java.util.Map;
 
@@ -32,7 +32,9 @@ public class MemoryConfiguration extends MemorySection implements Configuration 
 
     @Override
     public void addDefault(String path, Object value) {
-        Preconditions.checkArgument(path != null, "Path may not be null");
+        if(path ==null) {
+            throw new ConfigurationException("path must not be null");
+        }
 
         if (defaults == null) {
             defaults = new MemoryConfiguration();
@@ -43,7 +45,9 @@ public class MemoryConfiguration extends MemorySection implements Configuration 
 
     @Override
     public void addDefaults(Map<String, Object> defaults) {
-        Preconditions.checkArgument(defaults != null, "Defaults may not be null");
+        if(defaults ==null) {
+            throw new ConfigurationException("defaults must not be null");
+        }
 
         for (Map.Entry<String, Object> entry : defaults.entrySet()) {
             addDefault(entry.getKey(), entry.getValue());
@@ -52,7 +56,9 @@ public class MemoryConfiguration extends MemorySection implements Configuration 
 
     @Override
     public void addDefaults(Configuration defaults) {
-        Preconditions.checkArgument(defaults != null, "Defaults may not be null");
+        if(defaults ==null) {
+            throw new ConfigurationException("defaults must not be null");
+        }
 
         for (String key : defaults.getKeys(true)) {
             if (!defaults.isConfigurationSection(key)) {
@@ -63,7 +69,9 @@ public class MemoryConfiguration extends MemorySection implements Configuration 
 
     @Override
     public void setDefaults(Configuration defaults) {
-        Preconditions.checkArgument(defaults != null, "Defaults may not be null");
+        if(defaults ==null) {
+            throw new ConfigurationException("defaults must not be null");
+        }
 
         this.defaults = defaults;
     }

@@ -1,11 +1,9 @@
 package be.garagepoort.mcioc.configuration.yaml.configuration.file;
 
+import be.garagepoort.mcioc.configuration.files.ConfigurationException;
 import be.garagepoort.mcioc.configuration.yaml.configuration.Configuration;
 import be.garagepoort.mcioc.configuration.yaml.configuration.InvalidConfigurationException;
 import be.garagepoort.mcioc.configuration.yaml.configuration.MemoryConfiguration;
-import com.google.common.base.Charsets;
-import com.google.common.base.Preconditions;
-import com.google.common.io.Files;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,6 +15,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 
 /**
  * This is a base class for all File based implementations of {@link
@@ -57,13 +56,15 @@ public abstract class FileConfiguration extends MemoryConfiguration {
      * @throws IllegalArgumentException Thrown when file is null.
      */
     public void save(File file) throws IOException {
-        Preconditions.checkArgument(file != null, "File cannot be null");
+        if(file ==null) {
+            throw new ConfigurationException("File must not be null");
+        }
 
-        Files.createParentDirs(file);
+        createParentDirs(file);
 
         String data = saveToString();
 
-        Writer writer = new OutputStreamWriter(new FileOutputStream(file), Charsets.UTF_8);
+        Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8);
 
         try {
             writer.write(data);
@@ -88,7 +89,9 @@ public abstract class FileConfiguration extends MemoryConfiguration {
      * @throws IllegalArgumentException Thrown when file is null.
      */
     public void save(String file) throws IOException {
-        Preconditions.checkArgument(file != null, "File cannot be null");
+        if(file ==null) {
+            throw new ConfigurationException("File must not be null");
+        }
 
         save(new File(file));
     }
@@ -120,11 +123,13 @@ public abstract class FileConfiguration extends MemoryConfiguration {
      * @throws IllegalArgumentException      Thrown when file is null.
      */
     public void load(File file) throws FileNotFoundException, IOException, InvalidConfigurationException {
-        Preconditions.checkArgument(file != null, "File cannot be null");
+        if(file ==null) {
+            throw new ConfigurationException("File must not be null");
+        }
 
         final FileInputStream stream = new FileInputStream(file);
 
-        load(new InputStreamReader(stream, Charsets.UTF_8));
+        load(new InputStreamReader(stream, StandardCharsets.UTF_8));
     }
 
     /**
@@ -178,7 +183,9 @@ public abstract class FileConfiguration extends MemoryConfiguration {
      * @throws IllegalArgumentException      Thrown when file is null.
      */
     public void load(String file) throws FileNotFoundException, IOException, InvalidConfigurationException {
-        Preconditions.checkArgument(file != null, "File cannot be null");
+        if(file ==null) {
+            throw new ConfigurationException("File must not be null");
+        }
 
         load(new File(file));
     }
@@ -219,5 +226,22 @@ public abstract class FileConfiguration extends MemoryConfiguration {
         }
 
         return (FileConfigurationOptions) options;
+    }
+
+    private void createParentDirs(File file) throws IOException {
+        File parent = file.getCanonicalFile().getParentFile();
+        if (parent == null) {
+            /*
+             * The given directory is a filesystem root. All zero of its ancestors exist. This doesn't
+             * mean that the root itself exists -- consider x:\ on a Windows machine without such a drive
+             * -- or even that the caller can create it, but this method makes no such guarantees even for
+             * non-root files.
+             */
+            return;
+        }
+        parent.mkdirs();
+        if (!parent.isDirectory()) {
+            throw new IOException("Unable to create parent directories of " + file);
+        }
     }
 }
