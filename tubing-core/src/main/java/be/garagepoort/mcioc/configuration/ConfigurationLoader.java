@@ -1,6 +1,7 @@
 package be.garagepoort.mcioc.configuration;
 
 import be.garagepoort.mcioc.IocBean;
+import be.garagepoort.mcioc.ReflectionUtils;
 import be.garagepoort.mcioc.TubingPlugin;
 import be.garagepoort.mcioc.common.TubingConfigurationProvider;
 import be.garagepoort.mcioc.configuration.files.AutoUpdater;
@@ -14,6 +15,7 @@ import be.garagepoort.mcioc.load.InjectTubingPlugin;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @IocBean(priority = true)
@@ -28,7 +30,7 @@ public class ConfigurationLoader {
         this.configurationFiles = tubingConfigurationProvider.getConfigurationFiles();
         boolean success = loadConfig(tubingPlugin, tubingConfigurationProvider.getConfigurationMigrators());
         if (!success) {
-            throw new ConfigurationException("Could not load TubingConfigurationProvider");
+            throw new ConfigurationException("Could not be.garagepoort.mcioc.tubingvelocity.load TubingConfigurationProvider");
         }
     }
 
@@ -58,5 +60,13 @@ public class ConfigurationLoader {
     public Map<String, FileConfiguration> getConfigurationFiles() {
         return configurationFiles.stream()
             .collect(Collectors.toMap(ConfigurationFile::getIdentifier, ConfigurationFile::getFileConfiguration, (a, b) -> a));
+    }
+
+    public <T> Optional<T> getConfigValue(String identifier) {
+        return ReflectionUtils.getConfigValue(identifier, getConfigurationFiles());
+    }
+
+    public Optional<String> getConfigStringValue(String identifier) {
+        return ReflectionUtils.getConfigStringValue(identifier, getConfigurationFiles());
     }
 }

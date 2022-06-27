@@ -12,6 +12,7 @@
         <module>tubing-bungee</module>
         <module>tubing-bukkit</module>
         <module>tubing-bukkit-gui</module>
+        <module>tubing-velocity</module>
     </modules>
 
     <properties>

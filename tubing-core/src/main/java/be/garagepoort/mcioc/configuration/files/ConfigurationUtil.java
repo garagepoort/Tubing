@@ -77,7 +77,7 @@ public class ConfigurationUtil {
         try {
             config.load(file);
         } catch (Exception e) {
-            throw new ConfigurationException("Cannot load " + file, e);
+            throw new ConfigurationException("Cannot be.garagepoort.mcioc.tubingvelocity.load " + file, e);
         }
 
         return config;

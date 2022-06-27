@@ -292,9 +292,9 @@ public class YamlConfiguration extends FileConfiguration {
             config.load(file);
         } catch (FileNotFoundException ex) {
         } catch (IOException ex) {
-//            Bukkit.getLogger().log(Level.SEVERE, "Cannot load " + file, ex);
+//            Bukkit.getLogger().log(Level.SEVERE, "Cannot be.garagepoort.mcioc.tubingvelocity.load " + file, ex);
         } catch (InvalidConfigurationException ex) {
-//            Bukkit.getLogger().log(Level.SEVERE, "Cannot load " + file, ex);
+//            Bukkit.getLogger().log(Level.SEVERE, "Cannot be.garagepoort.mcioc.tubingvelocity.load " + file, ex);
         }
 
         return config;
@@ -319,9 +319,9 @@ public class YamlConfiguration extends FileConfiguration {
         try {
             config.load(reader);
         } catch (IOException ex) {
-//            Bukkit.getLogger().log(Level.SEVERE, "Cannot load configuration from stream", ex);
+//            Bukkit.getLogger().log(Level.SEVERE, "Cannot be.garagepoort.mcioc.tubingvelocity.load configuration from stream", ex);
         } catch (InvalidConfigurationException ex) {
-//            Bukkit.getLogger().log(Level.SEVERE, "Cannot load configuration from stream", ex);
+//            Bukkit.getLogger().log(Level.SEVERE, "Cannot be.garagepoort.mcioc.tubingvelocity.load configuration from stream", ex);
         }
 
         return config;

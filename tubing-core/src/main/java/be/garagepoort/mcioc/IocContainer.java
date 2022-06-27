@@ -53,7 +53,7 @@ public class IocContainer {
             }
             loadIocBeans();
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException("Tubing could not load the IOC container", e);
+            throw new RuntimeException("Tubing could not be.garagepoort.mcioc.tubingvelocity.load the IOC container", e);
         }
     }
 
