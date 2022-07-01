@@ -50,7 +50,7 @@ public class FreemarkerGuiTemplateResolver implements GuiTemplateResolver {
             template.process(params, stringWriter);
             return stringWriter.toString();
         } catch (IOException | TemplateException e) {
-            throw new TubingGuiException("Could not be.garagepoort.mcioc.tubingvelocity.load template: [" + templatePath + "]", e);
+            throw new TubingGuiException("Could not load template: [" + templatePath + "]", e);
         }
     }
 }

@@ -167,7 +167,7 @@ public abstract class TubingGuiTemplateTest {
         try {
             config.loadFromString(IOUtils.toString(resource));
         } catch (Exception e) {
-            throw new TubingGuiException("Cannot be.garagepoort.mcioc.tubingvelocity.load " + path, e);
+            throw new TubingGuiException("Cannot load " + path, e);
         }
 
         return config;

@@ -35,7 +35,6 @@ public class IocContainer {
     private List<Class> beanAnnotations;
     private final Map<Class, Object> beans = new HashMap<>();
     private final IocConditionalPropertyFilter iocConditionalPropertyFilter = new IocConditionalPropertyFilter();
-    private final IocConditionalFilter iocConditionalFilter = new IocConditionalFilter();
     private Reflections reflections;
     private TubingPlugin tubingPlugin;
     private ConfigurationLoader configurationLoader;
@@ -53,7 +52,7 @@ public class IocContainer {
             }
             loadIocBeans();
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException("Tubing could not be.garagepoort.mcioc.tubingvelocity.load the IOC container", e);
+            throw new RuntimeException("Tubing could not load the IOC container", e);
         }
     }
 
@@ -92,7 +91,6 @@ public class IocContainer {
             configurationLoader = (ConfigurationLoader) instantiateBean(reflections, ConfigurationLoader.class, validBeans, providers, multiProviders, false);
             classesWithBeanAnnotations = classesWithBeanAnnotations.stream()
                 .filter(a -> iocConditionalPropertyFilter.isValidBean(beanAnnotations, a, getConfigurationFiles()))
-                .filter(iocConditionalFilter::isValidBean)
                 .collect(Collectors.toList());
             validBeans = Stream.concat(classesWithBeanAnnotations.stream(), providedBeans.stream()).collect(Collectors.toCollection(LinkedHashSet::new));
 

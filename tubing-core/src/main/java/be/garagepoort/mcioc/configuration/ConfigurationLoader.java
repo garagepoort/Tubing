@@ -30,7 +30,7 @@ public class ConfigurationLoader {
         this.configurationFiles = tubingConfigurationProvider.getConfigurationFiles();
         boolean success = loadConfig(tubingPlugin, tubingConfigurationProvider.getConfigurationMigrators());
         if (!success) {
-            throw new ConfigurationException("Could not be.garagepoort.mcioc.tubingvelocity.load TubingConfigurationProvider");
+            throw new ConfigurationException("Could not load TubingConfigurationProvider");
         }
     }
 

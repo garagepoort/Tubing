@@ -114,7 +114,7 @@ public abstract class FileConfiguration extends MemoryConfiguration {
      * If the file cannot be loaded for any reason, an exception will be
      * thrown.
      *
-     * @param file File to be.garagepoort.mcioc.tubingvelocity.load from.
+     * @param file File to load from.
      * @throws FileNotFoundException         Thrown when the given file cannot be
      *                                       opened.
      * @throws IOException                   Thrown when the given file cannot be read.
@@ -139,7 +139,7 @@ public abstract class FileConfiguration extends MemoryConfiguration {
      * leaving only settings and defaults, and the new values will be loaded
      * from the given stream.
      *
-     * @param reader the reader to be.garagepoort.mcioc.tubingvelocity.load from
+     * @param reader the reader to load from
      * @throws IOException                   thrown when underlying reader throws an IOException
      * @throws InvalidConfigurationException thrown when the reader does not
      *                                       represent a valid Configuration
@@ -174,7 +174,7 @@ public abstract class FileConfiguration extends MemoryConfiguration {
      * If the file cannot be loaded for any reason, an exception will be
      * thrown.
      *
-     * @param file File to be.garagepoort.mcioc.tubingvelocity.load from.
+     * @param file File to load from.
      * @throws FileNotFoundException         Thrown when the given file cannot be
      *                                       opened.
      * @throws IOException                   Thrown when the given file cannot be read.
@@ -200,7 +200,7 @@ public abstract class FileConfiguration extends MemoryConfiguration {
      * <p>
      * If the string is invalid in any way, an exception will be thrown.
      *
-     * @param contents Contents of a Configuration to be.garagepoort.mcioc.tubingvelocity.load.
+     * @param contents Contents of a Configuration to load.
      * @throws InvalidConfigurationException Thrown if the specified string is
      *                                       invalid.
      * @throws IllegalArgumentException      Thrown if contents is null.

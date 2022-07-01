@@ -5,7 +5,7 @@ import be.garagepoort.mcioc.configuration.files.ConfigurationException;
 import java.util.Map;
 
 /**
- * This is a {@link Configuration} implementation that does not save or be.garagepoort.mcioc.tubingvelocity.load
+ * This is a {@link Configuration} implementation that does not save or load
  * from any source, and stores all values in memory only.
  * This is useful for temporary Configurations for providing defaults.
  */

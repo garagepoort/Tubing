@@ -114,7 +114,7 @@ public class StyleRepository {
         try {
             config.load(file);
         } catch (Exception e) {
-            throw new TubingGuiException("Cannot be.garagepoort.mcioc.tubingvelocity.load " + file, e);
+            throw new TubingGuiException("Cannot load " + file, e);
         }
 
         return config;
