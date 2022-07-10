@@ -280,7 +280,7 @@ public class IocContainer {
                 Optional<ConfigTransformer> configTransformerAnnotation = Arrays.stream(annotations)
                     .filter(a -> a.annotationType().equals(ConfigTransformer.class))
                     .map(a -> (ConfigTransformer) a).findFirst();
-                Optional<Object> configValue = PropertyInjector.parseConfig(configAnnotation.get(), configTransformerAnnotation.orElse(null), getConfigurationFiles());
+                Optional<Object> configValue = PropertyInjector.parseConfig(classParam, configAnnotation.get(), configTransformerAnnotation.orElse(null), getConfigurationFiles());
                 constructorParams.add(configValue.orElse(null));
             } else if (multiAnnotation.isPresent()) {
                 IocMulti iocMulti = (IocMulti) multiAnnotation.get();

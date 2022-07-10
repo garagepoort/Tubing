@@ -29,7 +29,7 @@ public class PropertyInjector {
                     configTransformer = f.getAnnotation(ConfigTransformer.class);
                 }
                 ConfigProperty annotation = f.getAnnotation(ConfigProperty.class);
-                Optional<Object> parsedConfigValue = parseConfig(annotation, configTransformer, configs);
+                Optional<Object> parsedConfigValue = parseConfig(f.getType(), annotation, configTransformer, configs);
                 if (parsedConfigValue.isPresent()) {
                     f.setAccessible(true);
                     f.set(o, parsedConfigValue.get());
@@ -40,9 +40,9 @@ public class PropertyInjector {
         }
     }
 
-    public static Optional<Object> parseConfig(ConfigProperty configAnnotation, ConfigTransformer configTransformer, Map<String, FileConfiguration> configs) {
+    public static <T> Optional<T> parseConfig(Class type, ConfigProperty configAnnotation, ConfigTransformer configTransformer, Map<String, FileConfiguration> configs) {
         try {
-            Optional<Object> configValue = ReflectionUtils.getConfigValue(configAnnotation.value(), configs);
+            Optional<T> configValue = ReflectionUtils.getConfigValue(configAnnotation.value(), configs);
             if (!configValue.isPresent()) {
                 return Optional.empty();
             }
@@ -50,11 +50,19 @@ public class PropertyInjector {
                 Object transformedConfig = configValue.get();
                 for (Class<? extends IConfigTransformer> transformerClass : configTransformer.value()) {
                     Constructor<?> declaredConstructor = transformerClass.getDeclaredConstructors()[0];
-                    IConfigTransformer iConfigTransformer = (IConfigTransformer) declaredConstructor.newInstance();
+                    IConfigTransformer iConfigTransformer;
+                    Class<?>[] parameterTypes = declaredConstructor.getParameterTypes();
+                    if (parameterTypes.length == 1) {
+                        iConfigTransformer = (IConfigTransformer) declaredConstructor.newInstance(type);
+                    } else if (parameterTypes.length == 0) {
+                        iConfigTransformer = (IConfigTransformer) declaredConstructor.newInstance();
+                    } else {
+                        throw new IocException("Invalid IConfigTransformer. Invalid constructor");
+                    }
                     setProperties(configs, iConfigTransformer);
                     transformedConfig = iConfigTransformer.mapConfig(transformedConfig);
                 }
-                return Optional.ofNullable(transformedConfig);
+                return (Optional<T>) Optional.ofNullable(transformedConfig);
             } else {
                 return configValue;
             }
