@@ -15,7 +15,7 @@ public class ConfigObjectListTransformer {
         return Objects.requireNonNull(listOfMaps).stream().map(map -> {
             try {
                 T instance = (T) objectClass.getConstructors()[0].newInstance();
-                PropertyInjector.injectConfigurationPropertiesBla(instance, map);
+                PropertyInjector.injectEmbeddedConfigurationProperties(instance, map);
                 return instance;
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 throw new ConfigurationException("Invalid ConfigObjectList configuration");

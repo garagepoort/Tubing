@@ -1,8 +1,6 @@
 package be.garagepoort.mcioc;
 
-import be.garagepoort.mcioc.configuration.ConfigObjectList;
 import be.garagepoort.mcioc.configuration.ConfigProperty;
-import be.garagepoort.mcioc.configuration.ConfigTransformer;
 import be.garagepoort.mcioc.configuration.ConfigurationLoader;
 import be.garagepoort.mcioc.configuration.PropertyInjector;
 import be.garagepoort.mcioc.configuration.TubingPluginInjector;
@@ -278,14 +276,8 @@ public class IocContainer {
             if (tubingPluginAnnotation.isPresent()) {
                 constructorParams.add(tubingPlugin);
             } else if (configAnnotation.isPresent()) {
-                Optional<ConfigTransformer> configTransformerAnnotation = Arrays.stream(annotations)
-                    .filter(a -> a.annotationType().equals(ConfigTransformer.class))
-                    .map(a -> (ConfigTransformer) a).findFirst();
-                Optional<ConfigObjectList> configObjectListAnnotation = Arrays.stream(annotations)
-                    .filter(a -> a.annotationType().equals(ConfigObjectList.class))
-                    .map(a -> (ConfigObjectList) a).findFirst();
-                Optional<Object> configValue = PropertyInjector.parseConfig(classParam, configAnnotation.get(), configTransformerAnnotation.orElse(null), configObjectListAnnotation.orElse(null), getConfigurationFiles());
-                constructorParams.add(configValue.orElse(null));
+                Object property = PropertyInjector.getConstructorConfigurationProperty(classParam, annotations, getConfigurationFiles());
+                constructorParams.add(property);
             } else if (multiAnnotation.isPresent()) {
                 IocMulti iocMulti = (IocMulti) multiAnnotation.get();
                 constructorParams.add(instantiateBean(reflections, iocMulti.value(), validBeans, providedBeans, multiProviders, true));
