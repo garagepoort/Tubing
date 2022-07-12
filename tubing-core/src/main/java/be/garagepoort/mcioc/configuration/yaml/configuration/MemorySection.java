@@ -1,6 +1,7 @@
 package be.garagepoort.mcioc.configuration.yaml.configuration;
 
 import be.garagepoort.mcioc.configuration.files.ConfigurationException;
+import be.garagepoort.mcioc.configuration.transformers.ConfigObjectListTransformer;
 import be.garagepoort.mcioc.configuration.yaml.configuration.serialization.ConfigurationSerializable;
 
 import java.util.ArrayList;
@@ -434,10 +435,18 @@ public class MemorySection implements ConfigurationSection {
 
     // Java
     @Override
-
     public List<?> getList(String path) {
         Object def = getDefault(path);
         return getList(path, (def instanceof List) ? (List<?>) def : null);
+    }
+
+    @Override
+    public <T> List<T> getObjectList(String path, Class<T> objectClass, List<T> def) {
+        Object val = get(path, def);
+        if (val == null) {
+            return def;
+        }
+        return ConfigObjectListTransformer.transform(objectClass, (List<LinkedHashMap<String, Object>>) val);
     }
 
     @Override
