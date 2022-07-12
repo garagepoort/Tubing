@@ -2,6 +2,7 @@ package be.garagepoort.mcioc.configuration;
 
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
+import be.garagepoort.mcioc.configuration.files.ConfigurationException;
 import be.garagepoort.mcioc.configuration.transformers.ConfigEmbeddedObjectTransformer;
 import be.garagepoort.mcioc.configuration.transformers.ConfigObjectListTransformer;
 import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
@@ -93,6 +94,9 @@ public class PropertyInjector {
         try {
             Optional configValue = configRetrievalFunction.apply(configAnnotation.value());
             if (!configValue.isPresent()) {
+                if (configAnnotation.required()) {
+                    throw new ConfigurationException(configAnnotation.error().isEmpty() ? "Configuration not found for " + configAnnotation.value() : configAnnotation.error());
+                }
                 return Optional.empty();
             }
 

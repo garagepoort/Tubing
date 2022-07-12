@@ -441,7 +441,7 @@ public class MemorySection implements ConfigurationSection {
     }
 
     @Override
-    public List<?> getObjectList(String path, Class objectClass, List<?> def) {
+    public <T> List<T> getObjectList(String path, Class<T> objectClass, List<T> def) {
         Object val = get(path, def);
         if (val == null) {
             return def;
