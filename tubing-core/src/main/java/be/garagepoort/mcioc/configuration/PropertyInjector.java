@@ -2,6 +2,7 @@ package be.garagepoort.mcioc.configuration;
 
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
+import be.garagepoort.mcioc.configuration.transformers.ConfigEmbeddedObjectTransformer;
 import be.garagepoort.mcioc.configuration.transformers.ConfigObjectListTransformer;
 import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 
@@ -39,7 +40,14 @@ public class PropertyInjector {
             .filter(a -> a.annotationType().equals(ConfigObjectList.class))
             .map(a -> (ConfigObjectList) a).findFirst();
 
-        Optional<Object> configValue = parseConfig(classParam, configAnnotation.get(), configTransformerAnnotation.orElse(null), configObjectListAnnotation.orElse(null), v -> ReflectionUtils.getConfigValue(v, configs));
+        Optional<ConfigEmbeddedObject> configEmbeddedObject = Arrays.stream(annotations)
+            .filter(a -> a.annotationType().equals(ConfigEmbeddedObject.class))
+            .map(a -> (ConfigEmbeddedObject) a).findFirst();
+
+        Optional<Object> configValue = parseConfig(classParam, configAnnotation.get(),
+            configTransformerAnnotation.orElse(null),
+            configObjectListAnnotation.orElse(null),
+            configEmbeddedObject.orElse(null), v -> ReflectionUtils.getConfigValue(v, configs));
         return configValue.orElse(null);
     }
 
@@ -59,8 +67,13 @@ public class PropertyInjector {
                     configObjectListAnnotation = f.getAnnotation(ConfigObjectList.class);
                 }
 
+                ConfigEmbeddedObject configEmbeddedObject = null;
+                if (f.isAnnotationPresent(ConfigEmbeddedObject.class)) {
+                    configEmbeddedObject = f.getAnnotation(ConfigEmbeddedObject.class);
+                }
+
                 ConfigProperty annotation = f.getAnnotation(ConfigProperty.class);
-                Optional<Object> parsedConfigValue = parseConfig(f.getType(), annotation, configTransformer, configObjectListAnnotation, configRetrievalFunction);
+                Optional<Object> parsedConfigValue = parseConfig(f.getType(), annotation, configTransformer, configObjectListAnnotation, configEmbeddedObject, configRetrievalFunction);
                 if (parsedConfigValue.isPresent()) {
                     f.setAccessible(true);
                     f.set(o, parsedConfigValue.get());
@@ -72,14 +85,21 @@ public class PropertyInjector {
     }
 
     private static <T> Optional<T> parseConfig(Class type,
-                                              ConfigProperty configAnnotation,
-                                              ConfigTransformer configTransformer,
-                                              ConfigObjectList configObjectList,
-                                              Function<String, Optional> configRetrievalFunction) {
+                                               ConfigProperty configAnnotation,
+                                               ConfigTransformer configTransformer,
+                                               ConfigObjectList configObjectList,
+                                               ConfigEmbeddedObject configEmbeddedObject,
+                                               Function<String, Optional> configRetrievalFunction) {
         try {
-            Optional<T> configValue = configRetrievalFunction.apply(configAnnotation.value());
+            Optional configValue = configRetrievalFunction.apply(configAnnotation.value());
             if (!configValue.isPresent()) {
                 return Optional.empty();
+            }
+
+            if (configEmbeddedObject != null) {
+                Class objectClass = configEmbeddedObject.value();
+                LinkedHashMap<String, Object> listOfMaps = (LinkedHashMap<String, Object>) configValue.get();
+                return (Optional<T>) Optional.ofNullable(ConfigEmbeddedObjectTransformer.transform(objectClass, listOfMaps));
             }
             if (configObjectList != null) {
                 Class objectClass = configObjectList.value();

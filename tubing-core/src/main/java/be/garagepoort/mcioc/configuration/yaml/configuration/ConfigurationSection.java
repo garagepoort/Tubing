@@ -439,6 +439,8 @@ public interface ConfigurationSection {
 
     public List<?> getList(String path);
 
+    List<?> getObjectList(String path, Class objectClass, List<?> def);
+
     /**
      * Gets the requested List by path, returning a default value if not
      * found.
