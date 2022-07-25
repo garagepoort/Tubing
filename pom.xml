@@ -6,13 +6,20 @@
     <groupId>be.garagepoort.mcioc</groupId>
     <artifactId>tubing</artifactId>
     <packaging>pom</packaging>
-    <version>7.1.2</version>
+    <version>7.2.0</version>
     <modules>
         <module>tubing-core</module>
         <module>tubing-bungee</module>
-        <module>tubing-bukkit</module>
-        <module>tubing-bukkit-gui</module>
         <module>tubing-velocity</module>
+        <module>bukkit/compat/tubing-bukkit-compatibility</module>
+        <module>bukkit/compat/tubing-bukkit-1.12</module>
+        <module>bukkit/compat/tubing-bukkit-1.13</module>
+        <module>bukkit/compat/tubing-bukkit-1.14</module>
+        <module>bukkit/compat/tubing-bukkit-1.15</module>
+        <module>bukkit/compat/tubing-bukkit-1.16</module>
+        <module>bukkit/compat/tubing-bukkit-1.17</module>
+        <module>bukkit/tubing-bukkit</module>
+        <module>bukkit/tubing-bukkit-gui</module>
     </modules>
 
     <properties>
