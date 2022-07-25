@@ -29,8 +29,8 @@ Some of it core features are:
 ```
 <dependency>
     <groupId>be.garagepoort.mcioc</groupId>
-    <artifactId>tubing</artifactId>
-    <version>6.0.0</version>
+    <artifactId>tubing-core</artifactId>
+    <version>7.2.0</version>
     <exclusions>
         <exclusion>
             <groupId>*</groupId>
