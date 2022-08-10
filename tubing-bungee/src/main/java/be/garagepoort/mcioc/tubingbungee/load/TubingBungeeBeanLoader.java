@@ -7,17 +7,16 @@ import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.PluginManager;
 
-import java.util.Set;
+import java.util.List;
 
 public class TubingBungeeBeanLoader {
 
     public static void load(TubingBungeePlugin tubingPlugin) {
         loadCommandHandlerBeans(tubingPlugin);
-//        loadListenerBeans(TubingBungeePlugin);
     }
 
     private static void loadCommandHandlerBeans(TubingBungeePlugin tubingPlugin) {
-        Set<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getTypesAnnotatedWith(IocBungeeCommandHandler.class);
+        List<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getClassesWithAnnotation(IocBungeeCommandHandler.class).loadClasses();
 
         PluginManager pluginManager = ProxyServer.getInstance().getPluginManager();
         for (Class<?> aClass : typesAnnotatedWith) {
@@ -32,18 +31,4 @@ public class TubingBungeeBeanLoader {
         }
     }
 
-//    private static void loadListenerBeans(TubingPlugin tubingPlugin) {
-//        Set<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getTypesAnnotatedWith(IocBungeeListener.class);
-//
-//        for (Class<?> aClass : typesAnnotatedWith) {
-//            if (!Listener.class.isAssignableFrom(aClass)) {
-//                throw new IocException("IocListener annotation can only be used on bukkit Listeners. Failing class [" + aClass + "]");
-//            }
-//            if (tubingPlugin.getIocContainer().get(aClass) == null) {
-//                continue;
-//            }
-//            Listener bean = (Listener) tubingPlugin.getIocContainer().get(aClass);
-//            Bukkit.getPluginManager().registerEvents(bean, TubingBukkitPlugin.getPlugin());
-//        }
-//    }
 }

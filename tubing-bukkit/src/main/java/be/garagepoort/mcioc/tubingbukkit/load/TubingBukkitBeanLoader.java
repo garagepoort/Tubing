@@ -11,7 +11,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
-import java.util.Set;
+import java.util.List;
 
 public class TubingBukkitBeanLoader {
 
@@ -22,7 +22,7 @@ public class TubingBukkitBeanLoader {
     }
 
     private static void loadCommandHandlerBeans(TubingPlugin tubingPlugin) {
-        Set<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getTypesAnnotatedWith(IocBukkitCommandHandler.class);
+        List<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getClassesWithAnnotation(IocBukkitCommandHandler.class).loadClasses();
 
         for (Class<?> aClass : typesAnnotatedWith) {
             if (!CommandExecutor.class.isAssignableFrom(aClass)) {
@@ -38,7 +38,7 @@ public class TubingBukkitBeanLoader {
     }
 
     private static void loadListenerBeans(TubingPlugin tubingPlugin) {
-        Set<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getTypesAnnotatedWith(IocBukkitListener.class);
+        List<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getClassesWithAnnotation(IocBukkitListener.class).loadClasses();
 
         for (Class<?> aClass : typesAnnotatedWith) {
             if (!Listener.class.isAssignableFrom(aClass)) {
@@ -53,7 +53,7 @@ public class TubingBukkitBeanLoader {
     }
 
     private static void loadMessageListenerBeans(TubingPlugin tubingPlugin) {
-        Set<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getTypesAnnotatedWith(IocBukkitMessageListener.class);
+        List<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getClassesWithAnnotation(IocBukkitMessageListener.class).loadClasses();
 
         for (Class<?> aClass : typesAnnotatedWith) {
             if (!PluginMessageListener.class.isAssignableFrom(aClass)) {

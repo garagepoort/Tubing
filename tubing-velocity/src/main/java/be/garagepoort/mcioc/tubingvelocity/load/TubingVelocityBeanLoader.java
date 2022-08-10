@@ -9,7 +9,7 @@ import be.garagepoort.mcioc.tubingvelocity.exceptions.TubingVelocityException;
 import com.velocitypowered.api.command.SimpleCommand;
 
 import java.util.Arrays;
-import java.util.Set;
+import java.util.List;
 
 public class TubingVelocityBeanLoader {
 
@@ -19,7 +19,7 @@ public class TubingVelocityBeanLoader {
     }
 
     private static void loadCommandHandlerBeans(TubingVelocityPlugin tubingPlugin) {
-        Set<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getTypesAnnotatedWith(IocVelocityCommandHandler.class);
+        List<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getClassesWithAnnotation(IocVelocityCommandHandler.class).loadClasses();
 
         for (Class<?> aClass : typesAnnotatedWith) {
             if (!SimpleCommand.class.isAssignableFrom(aClass)) {
@@ -49,7 +49,7 @@ public class TubingVelocityBeanLoader {
     }
 
     private static void loadListenerBeans(TubingVelocityPlugin tubingPlugin) {
-        Set<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getTypesAnnotatedWith(IocVelocityListener.class);
+        List<Class<?>> typesAnnotatedWith = tubingPlugin.getIocContainer().getReflections().getClassesWithAnnotation(IocVelocityListener.class).loadClasses();
 
         for (Class<?> aClass : typesAnnotatedWith) {
             if (tubingPlugin.getIocContainer().get(aClass) == null) {

@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import static java.util.Arrays.stream;
@@ -291,7 +290,7 @@ public class GuiActionService {
     }
 
     public void loadGuiControllers(IocContainer iocContainer) {
-        Set<Class<?>> typesAnnotatedWith = iocContainer.getReflections().getTypesAnnotatedWith(GuiController.class);
+        List<Class<?>> typesAnnotatedWith = iocContainer.getReflections().getClassesWithAnnotation(GuiController.class).loadClasses();
         typesAnnotatedWith.forEach(this::loadGuiController);
     }
 

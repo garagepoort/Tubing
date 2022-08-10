@@ -13,9 +13,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>0.10.2</version>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+            <version>4.8.149</version>
         </dependency>
         <dependency>
             <groupId>org.yaml</groupId>
@@ -59,20 +59,16 @@
                             </filters>
                             <relocations>
                                 <relocation>
-                                    <pattern>org.reflections</pattern>
-                                    <shadedPattern>be.garagepoort.mcioc.org.reflections</shadedPattern>
+                                    <pattern>io.github.classgraph</pattern>
+                                    <shadedPattern>be.garagepoort.mcioc.libs.io.github.classgraph</shadedPattern>
                                 </relocation>
                                 <relocation>
-                                    <pattern>javassist.</pattern>
-                                    <shadedPattern>be.garagepoort.mcioc.javassist.</shadedPattern>
+                                    <pattern>nonapi.io.github.classgraph</pattern>
+                                    <shadedPattern>be.garagepoort.mcioc.libs.nonapi.io.github.classgraph</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.yaml</pattern>
-                                    <shadedPattern>be.garagepoort.mcioc.org.yaml</shadedPattern>
-                                </relocation>
-                                <relocation>
-                                    <pattern>javax.annotation</pattern>
-                                    <shadedPattern>be.garagepoort.mcioc.javax.annotation</shadedPattern>
+                                    <shadedPattern>be.garagepoort.mcioc.libs.org.yaml</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>

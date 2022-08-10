@@ -130,11 +130,11 @@
                             <relocations>
                                 <relocation>
                                     <pattern>freemarker.</pattern>
-                                    <shadedPattern>be.garagepoort.mcioc.freemarker.</shadedPattern>
+                                    <shadedPattern>be.garagepoort.mcioc.libs.freemarker.</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.jsoup.</pattern>
-                                    <shadedPattern>be.garagepoort.mcioc.org.jsoup.</shadedPattern>
+                                    <shadedPattern>be.garagepoort.mcioc.libs.org.jsoup.</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
