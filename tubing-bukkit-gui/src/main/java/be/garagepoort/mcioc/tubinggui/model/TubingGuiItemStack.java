@@ -6,6 +6,7 @@ import java.util.List;
 
 public class TubingGuiItemStack {
 
+    private String materialUrl;
     private int amount = 1;
     private Material material;
     private final TubingGuiText name;
@@ -26,9 +27,20 @@ public class TubingGuiItemStack {
         this.enchanted = enchanted;
         this.loreLines = loreLines;
     }
+    public TubingGuiItemStack(int amount, String materialUrl, TubingGuiText name, boolean enchanted, List<TubingGuiText> loreLines) {
+        this.amount = amount;
+        this.materialUrl = materialUrl;
+        this.name = name;
+        this.enchanted = enchanted;
+        this.loreLines = loreLines;
+    }
 
     public Material getMaterial() {
         return material;
+    }
+
+    public String getMaterialUrl() {
+        return materialUrl;
     }
 
     public void setMaterial(Material material) {

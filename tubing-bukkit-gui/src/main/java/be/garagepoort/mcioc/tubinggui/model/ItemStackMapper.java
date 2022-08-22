@@ -1,6 +1,7 @@
 package be.garagepoort.mcioc.tubinggui.model;
 
 import be.garagepoort.mcioc.IocBean;
+import be.garagepoort.mcioc.tubinggui.templates.xml.MaterialUrlParser;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -26,7 +27,11 @@ public class ItemStackMapper {
     public ItemStack map(TubingGuiItem tubingGuiItem, boolean showIds) {
         TubingGuiItemStack tubingGuiItemStack = tubingGuiItem.getTubingGuiItemStack();
 
-        ItemStack itemStack = new ItemStack(tubingGuiItemStack.getMaterial());
+        ItemStack itemStack = new ItemStack(tubingGuiItemStack.getMaterialUrl() == null ? tubingGuiItemStack.getMaterial() : Material.valueOf("PLAYER_HEAD"));
+        if(tubingGuiItemStack.getMaterialUrl() != null) {
+            MaterialUrlParser.updateItemsStackWithCustomTexture(itemStack, tubingGuiItemStack.getMaterialUrl());
+        }
+
         itemStack.setAmount(tubingGuiItemStack.getAmount());
 
         addName(itemStack, tubingGuiItem, tubingGuiItemStack.getName(), showIds);
@@ -61,7 +66,7 @@ public class ItemStackMapper {
 
     private ItemMeta getItemMeta(ItemStack itemStack) {
         ItemMeta itemMeta = itemStack.getItemMeta();
-        if(itemMeta == null) {
+        if (itemMeta == null) {
             // hack if no item meta is set for this material
             itemMeta = Bukkit.getItemFactory().getItemMeta(Material.PAPER);
         }

@@ -36,6 +36,7 @@ public class TubingXmlToTubingGuiMapper {
     private static final String ID_ATTR = "id";
     private static final String COLOR_ATTR = "color";
     private static final String MATERIAL_ATTR = "material";
+    private static final String MATERIAL_URL_ATTR = "materialUrl";
     private static final String AMOUNT_ATTR = "amount";
     private static final String NAME_ELEMENT = "name";
     private static final String NAME_ATTR = "name";
@@ -84,22 +85,24 @@ public class TubingXmlToTubingGuiMapper {
 
                 int slot = Integer.parseInt(guiItem.attr(SLOT_ATTR));
                 int amount = guiItem.hasAttr(AMOUNT_ATTR) ? Integer.parseInt(guiItem.attr(AMOUNT_ATTR)) : 1;
-                String material = guiItem.attr(MATERIAL_ATTR);
                 Element nameElement = guiItem.selectFirst(NAME_ELEMENT);
                 TubingGuiText tubingGuiText = parseItemName(guiItem, nameElement);
 
                 boolean enchanted = guiItem.hasAttr(ENCHANTED_ATTR);
                 List<TubingGuiText> loreLines = parseLoreLines(player, guiItem);
 
-                TubingGuiItemStack itemStack = new TubingGuiItemStack(amount, Material.valueOf(material), tubingGuiText, enchanted, loreLines);
+                TubingGuiItemStack itemStack = guiItem.hasAttr(MATERIAL_URL_ATTR) ?
+                    new TubingGuiItemStack(amount, guiItem.attr(MATERIAL_URL_ATTR), tubingGuiText, enchanted, loreLines) :
+                    new TubingGuiItemStack(amount, Material.valueOf(guiItem.attr(MATERIAL_ATTR)), tubingGuiText, enchanted, loreLines);
+
                 TubingGuiItem tubingGuiItem = new TubingGuiItem.Builder(guiItemId, slot)
-                        .withLeftClickAction(leftClickAction)
-                        .withRightClickAction(rightClickAction)
-                        .withLeftShiftClickAction(leftShiftClickAction)
-                        .withRightShiftClickAction(rightShiftClickAction)
-                        .withMiddleClickAction(middleClickAction)
-                        .withItemStack(itemStack)
-                        .build();
+                    .withLeftClickAction(leftClickAction)
+                    .withRightClickAction(rightClickAction)
+                    .withLeftShiftClickAction(leftShiftClickAction)
+                    .withRightShiftClickAction(rightShiftClickAction)
+                    .withMiddleClickAction(middleClickAction)
+                    .withItemStack(itemStack)
+                    .build();
                 builder.addItem(tubingGuiItem);
             }
         }
@@ -157,12 +160,12 @@ public class TubingXmlToTubingGuiMapper {
         if (loreElement != null) {
             if (validateShowElement(loreElement, player)) {
                 List<Element> loreLinesElements = loreElement.select("LoreLine").stream()
-                        .filter(g -> validateShowElement(g, player))
-                        .collect(Collectors.toList());
+                    .filter(g -> validateShowElement(g, player))
+                    .collect(Collectors.toList());
 
                 loreLines = loreLinesElements.stream()
-                        .map(this::parseTextElement)
-                        .collect(Collectors.toList());
+                    .map(this::parseTextElement)
+                    .collect(Collectors.toList());
             }
         }
         return loreLines;
@@ -205,5 +208,4 @@ public class TubingXmlToTubingGuiMapper {
     private String format(String string) {
         return ChatColor.translateAlternateColorCodes('&', string);
     }
-
 }
