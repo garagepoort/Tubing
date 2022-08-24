@@ -13,6 +13,8 @@ import java.util.List;
 @IocBean
 public class Messages {
 
+    private static final String NO_PREFIX = "[NO_PREFIX]";
+
     private final PlaceholderService placeholderService;
     private final MessagePrefixProvider messagePrefixProvider;
 
@@ -73,6 +75,11 @@ public class Messages {
     }
 
     private String buildMessage(String prefix, String message) {
+        if(message.startsWith(NO_PREFIX)) {
+            prefix = "";
+            message = message.replace(NO_PREFIX, "");
+        }
+
         if (StringUtils.isEmpty(prefix)) {
             return colorize(message);
         } else {
