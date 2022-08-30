@@ -30,16 +30,25 @@ public class Messages {
     }
 
     public String parse(Player player, String message) {
+        if(isEmpty(message)) {
+            return "";
+        }
         return colorize(placeholderService.setPlaceholders(player, message));
     }
 
     public void sendNoPrefix(CommandSender sender, String message) {
+        if(isEmpty(message)) {
+            return;
+        }
         message = placeholderService.setPlaceholders(sender, message);
         for (String s : message.split("\\n")) {
             sender.sendMessage(buildMessage("", s));
         }
     }
     public void send(CommandSender sender, String message) {
+        if(isEmpty(message)) {
+            return;
+        }
         message = placeholderService.setPlaceholders(sender, message);
         for (String s : message.split("\\n")) {
             sender.sendMessage(buildMessage(getPrefix(), s));
@@ -47,10 +56,16 @@ public class Messages {
     }
 
     public void send(Collection<? extends Player> receivers, String message) {
+        if(isEmpty(message)) {
+            return;
+        }
         receivers.forEach(receiver -> send(receiver, message));
     }
 
     public void send(Player player, String message, String permission) {
+        if(isEmpty(message)) {
+            return;
+        }
         if (!player.hasPermission(permission)) {
             return;
         }
@@ -67,7 +82,7 @@ public class Messages {
     }
 
     public void sendGroupMessage(String message, String permission) {
-        if (message == null) {
+        if(isEmpty(message)) {
             return;
         }
         Bukkit.getOnlinePlayers()
@@ -89,5 +104,9 @@ public class Messages {
 
     private String getPrefix() {
         return messagePrefixProvider.getPrefix();
+    }
+
+    private boolean isEmpty(String str) {
+        return str == null || str.length() == 0;
     }
 }
