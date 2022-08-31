@@ -6,7 +6,7 @@
     <groupId>be.garagepoort.mcioc</groupId>
     <artifactId>tubing</artifactId>
     <packaging>pom</packaging>
-    <version>7.3.3</version>
+    <version>7.3.4</version>
     <modules>
         <module>tubing-core</module>
         <module>tubing-bungee</module>
