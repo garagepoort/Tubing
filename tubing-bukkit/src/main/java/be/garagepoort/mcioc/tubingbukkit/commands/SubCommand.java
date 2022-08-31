@@ -6,9 +6,5 @@ public interface SubCommand {
 
     boolean onCommand(CommandSender sender, String[] args);
 
-    String getAction();
-
-    String getRoot();
-
     String getHelp();
 }

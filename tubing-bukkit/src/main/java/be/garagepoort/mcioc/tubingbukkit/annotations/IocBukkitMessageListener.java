@@ -13,4 +13,6 @@ public @interface IocBukkitMessageListener {
     String conditionalOnProperty() default "";
 
     boolean priority() default false;
+
+    Class multiproviderClass() default Object.class;
 }

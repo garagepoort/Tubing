@@ -10,5 +10,7 @@ import java.lang.annotation.Target;
 public @interface IocBungeeListener {
     String conditionalOnProperty() default "";
 
+    Class multiproviderClass() default Object.class;
+
     boolean priority() default false;
 }

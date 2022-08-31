@@ -11,5 +11,7 @@ public @interface IocBungeeCommandHandler {
 
     String conditionalOnProperty() default "";
 
+    Class multiproviderClass() default Object.class;
+
     boolean priority() default false;
 }
