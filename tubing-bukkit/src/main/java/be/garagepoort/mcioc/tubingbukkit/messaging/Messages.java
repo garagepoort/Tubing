@@ -55,6 +55,14 @@ public class Messages {
         }
     }
 
+    public void broadcast(String message) {
+        if(isEmpty(message)) {
+            return;
+        }
+        Bukkit.getOnlinePlayers().forEach(receiver -> send(receiver, message));
+    }
+
+
     public void send(Collection<? extends Player> receivers, String message) {
         if(isEmpty(message)) {
             return;
