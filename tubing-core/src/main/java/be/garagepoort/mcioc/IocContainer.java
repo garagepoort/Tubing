@@ -42,9 +42,9 @@ public class IocContainer {
             this.tubingPlugin = tubingPlugin;
             String pkg = tubingPlugin.getClass().getPackage().getName();
             scanResult = new ClassGraph()
-                    .enableAllInfo()
-                    .acceptPackages(pkg)
-                    .scan();
+                .enableAllInfo()
+                .acceptPackages(pkg)
+                .scan();
             beanAnnotations = new ArrayList<>();
             for (Class<? extends TubingBeanAnnotationRegistrator> aClass : scanResult.getClassesImplementing(TubingBeanAnnotationRegistrator.class).loadClasses(TubingBeanAnnotationRegistrator.class)) {
                 Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
@@ -73,26 +73,26 @@ public class IocContainer {
             }
 
             List<Class<?>> classesWithBeanAnnotations = allBeans.stream()
-                    .sorted((o1, o2) -> {
-                        Annotation annotation1 = Arrays.stream(o1.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst().get();
-                        Annotation annotation2 = Arrays.stream(o2.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst().get();
-                        try {
-                            boolean priority1 = (boolean) annotation1.annotationType().getMethod("priority").invoke(annotation1);
-                            boolean priority2 = (boolean) annotation2.annotationType().getMethod("priority").invoke(annotation2);
-                            return Boolean.compare(priority2, priority1);
-                        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                            throw new RuntimeException("Invalid bean configuration. not property found");
-                        }
-                    })
-                    .collect(Collectors.toList());
+                .sorted((o1, o2) -> {
+                    Annotation annotation1 = Arrays.stream(o1.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst().get();
+                    Annotation annotation2 = Arrays.stream(o2.getAnnotations()).filter(a -> beanAnnotations.contains(a.annotationType())).findFirst().get();
+                    try {
+                        boolean priority1 = (boolean) annotation1.annotationType().getMethod("priority").invoke(annotation1);
+                        boolean priority2 = (boolean) annotation2.annotationType().getMethod("priority").invoke(annotation2);
+                        return Boolean.compare(priority2, priority1);
+                    } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                        throw new RuntimeException("Invalid bean configuration. not property found");
+                    }
+                })
+                .collect(Collectors.toList());
 
             Set<Class<?>> providedBeans = providers.stream().map(Method::getReturnType).collect(Collectors.toCollection(LinkedHashSet::new));
             Set<Class<?>> validBeans = Stream.concat(classesWithBeanAnnotations.stream(), providedBeans.stream()).collect(Collectors.toCollection(LinkedHashSet::new));
 
             configurationLoader = (ConfigurationLoader) instantiateBean(scanResult, ConfigurationLoader.class, validBeans, providers, multiProviders, false);
             classesWithBeanAnnotations = classesWithBeanAnnotations.stream()
-                    .filter(a -> iocConditionalPropertyFilter.isValidBean(beanAnnotations, a, getConfigurationFiles()))
-                    .collect(Collectors.toList());
+                .filter(a -> iocConditionalPropertyFilter.isValidBean(beanAnnotations, a, getConfigurationFiles()))
+                .collect(Collectors.toList());
             validBeans = Stream.concat(classesWithBeanAnnotations.stream(), providedBeans.stream()).collect(Collectors.toCollection(LinkedHashSet::new));
 
             for (Class<?> aClass : validBeans) {
@@ -112,7 +112,7 @@ public class IocContainer {
     private Object instantiateBean(ScanResult scanResult, Class<?> aClass, Set<Class<?>> validBeans, List<Method> providedBeans, List<Method> multiProviders, boolean multiProvider) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         if (multiProvider) {
             beans.putIfAbsent(aClass, new ArrayList<>());
-            Set<Class<?>> subTypesOf = scanResult.getClassesImplementing((Class<Object>) aClass).loadClasses().stream().filter(validBeans::contains).collect(Collectors.toSet());
+            Set<Class<?>> subTypesOf = scanResult.getClassesImplementing(aClass).loadClasses().stream().filter(validBeans::contains).collect(Collectors.toSet());
             List list = (List) beans.get(aClass);
             for (Class<?> subClass : subTypesOf) {
                 Object bean = createBean(scanResult, subClass, validBeans, providedBeans, multiProviders);
@@ -173,16 +173,16 @@ public class IocContainer {
 
             // Find only implementation of interface and instantiate
             Set<Class<?>> subTypes = scanResult.getClassesImplementing(aClass).loadClasses().stream()
-                    .filter(validBeans::contains)
-                    .collect(Collectors.toSet());
+                .filter(validBeans::contains)
+                .collect(Collectors.toSet());
 
             Set<Class<?>> subtypeNonConditional = subTypes.stream()
-                    .filter(a -> !a.isAnnotationPresent(ConditionalOnMissingBean.class))
-                    .collect(Collectors.toSet());
+                .filter(a -> !a.isAnnotationPresent(ConditionalOnMissingBean.class))
+                .collect(Collectors.toSet());
 
             Set<Class<?>> subtypesOnMissing = subTypes.stream()
-                    .filter(a -> a.isAnnotationPresent(ConditionalOnMissingBean.class))
-                    .collect(Collectors.toSet());
+                .filter(a -> a.isAnnotationPresent(ConditionalOnMissingBean.class))
+                .collect(Collectors.toSet());
 
             if (subTypes.isEmpty()) {
                 throw new IocException("Cannot instantiate bean with interface " + aClass.getName() + ". No classes implementing this interface");
@@ -283,11 +283,11 @@ public class IocContainer {
             Optional<Annotation> multiAnnotation = Arrays.stream(annotations).filter(a -> a.annotationType().equals(IocMulti.class)).findFirst();
 
             Optional<ConfigProperty> configAnnotation = Arrays.stream(annotations)
-                    .filter(a -> a.annotationType().equals(ConfigProperty.class))
-                    .map(a -> (ConfigProperty) a).findFirst();
+                .filter(a -> a.annotationType().equals(ConfigProperty.class))
+                .map(a -> (ConfigProperty) a).findFirst();
             Optional<InjectTubingPlugin> tubingPluginAnnotation = Arrays.stream(annotations)
-                    .filter(a -> a.annotationType().equals(InjectTubingPlugin.class))
-                    .map(a -> (InjectTubingPlugin) a).findFirst();
+                .filter(a -> a.annotationType().equals(InjectTubingPlugin.class))
+                .map(a -> (InjectTubingPlugin) a).findFirst();
 
             if (tubingPluginAnnotation.isPresent()) {
                 constructorParams.add(tubingPlugin);
