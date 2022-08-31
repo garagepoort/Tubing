@@ -8,6 +8,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface IocVelocityListener {
+
+    Class multiproviderClass() default Object.class;
+
     String conditionalOnProperty() default "";
 
     boolean priority() default false;

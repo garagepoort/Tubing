@@ -11,6 +11,8 @@ public @interface IocVelocityCommandHandler {
 
     String conditionalOnProperty() default "";
 
+    Class multiproviderClass() default Object.class;
+
     boolean priority() default false;
 
     String value();

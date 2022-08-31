@@ -13,5 +13,7 @@ public @interface GuiExceptionHandlerProvider {
 
     boolean priority() default false;
 
+    Class multiproviderClass() default Object.class;
+
     Class[] exceptions();
 }
