@@ -11,6 +11,10 @@ public @interface IocBukkitCommandHandler {
 
     String value();
 
+    String permission() default "";
+
+    boolean onlyPlayers() default false;
+
     String conditionalOnProperty() default "";
 
     Class multiproviderClass() default Object.class;

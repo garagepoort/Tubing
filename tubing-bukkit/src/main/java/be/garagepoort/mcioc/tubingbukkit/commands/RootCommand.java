@@ -6,13 +6,13 @@ import be.garagepoort.mcioc.tubingbukkit.annotations.IocBukkitSubCommand;
 import be.garagepoort.mcioc.tubingbukkit.commands.exceptions.CommandException;
 import be.garagepoort.mcioc.tubingbukkit.commands.exceptions.CommandExceptionHandler;
 import be.garagepoort.mcioc.tubingbukkit.messaging.Messages;
+import be.garagepoort.mcioc.tubingbukkit.permissions.TubingPermissionService;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,15 +21,18 @@ public abstract class RootCommand extends AbstractCmd implements TabCompleter {
     protected final List<SubCommand> subCommands;
 
     private final Messages messages;
+    private final TubingPermissionService permissionService;
 
     public RootCommand(CommandExceptionHandler commandExceptionHandler,
                        @IocMulti(SubCommand.class) List<SubCommand> subCommands,
-                       Messages messages) {
-        super(commandExceptionHandler);
+                       Messages messages,
+                       TubingPermissionService permissionService) {
+        super(commandExceptionHandler, permissionService);
         this.subCommands = subCommands.stream()
                 .filter(s -> s.getClass().getAnnotation(IocBukkitSubCommand.class).root().equalsIgnoreCase(getRootId()))
                 .collect(Collectors.toList());
         this.messages = messages;
+        this.permissionService = permissionService;
     }
 
     private String getRootId() {
@@ -53,7 +56,7 @@ public abstract class RootCommand extends AbstractCmd implements TabCompleter {
                 .filter(s -> s.getClass().getAnnotation(IocBukkitSubCommand.class).action().equalsIgnoreCase(action))
                 .findFirst()
                 .orElseThrow(() -> new CommandException("Invalid command action"));
-        subCommand.onCommand(sender, Arrays.copyOfRange(args, 1, args.length));
+        subCommand.onCommand(sender, Arrays.copyOfRange(args, 1, args.length), permissionService);
         return true;
     }
 

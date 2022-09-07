@@ -15,6 +15,10 @@ public @interface IocBukkitSubCommand {
 
     String action();
 
+    String permission() default "";
+
+    boolean onlyPlayers() default false;
+
     String conditionalOnProperty() default "";
 
     boolean priority() default false;
