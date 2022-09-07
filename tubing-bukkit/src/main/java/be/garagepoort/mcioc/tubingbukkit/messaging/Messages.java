@@ -1,6 +1,8 @@
 package be.garagepoort.mcioc.tubingbukkit.messaging;
 
 import be.garagepoort.mcioc.IocBean;
+import be.garagepoort.mcioc.configuration.ConfigurationLoader;
+import be.garagepoort.mcioc.tubingbukkit.TubingBukkitPlugin;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -9,6 +11,9 @@ import org.bukkit.entity.Player;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @IocBean
 public class Messages {
@@ -17,10 +22,12 @@ public class Messages {
 
     private final PlaceholderService placeholderService;
     private final MessagePrefixProvider messagePrefixProvider;
+    private final ConfigurationLoader configurationLoader;
 
-    public Messages(PlaceholderService placeholderService, MessagePrefixProvider messagePrefixProvider) {
+    public Messages(PlaceholderService placeholderService, MessagePrefixProvider messagePrefixProvider, ConfigurationLoader configurationLoader) {
         this.placeholderService = placeholderService;
         this.messagePrefixProvider = messagePrefixProvider;
+        this.configurationLoader = configurationLoader;
     }
 
     public String colorize(String message) {
@@ -98,6 +105,7 @@ public class Messages {
     }
 
     private String buildMessage(String prefix, String message) {
+        message = replaceConfigProperties(message);
         if(message.startsWith(NO_PREFIX)) {
             prefix = "";
             message = message.replace(NO_PREFIX, "");
@@ -116,5 +124,21 @@ public class Messages {
 
     private boolean isEmpty(String str) {
         return str == null || str.length() == 0;
+    }
+
+    private String replaceConfigProperties(String message) {
+        String newMessage = message;
+        String regexString = Pattern.quote("{{") + "(.*?)" + Pattern.quote("}}");
+        Pattern pattern = Pattern.compile(regexString);
+        Matcher matcher = pattern.matcher(message);
+        while(matcher.find()) {
+            String matched = matcher.group(1);
+            TubingBukkitPlugin.getPlugin().getLogger().info("Matched: " + matched);
+            Optional<String> configValue = configurationLoader.getConfigStringValue(matched);
+            if(configValue.isPresent()) {
+                newMessage = newMessage.replace("{{" + matched + "}}", configValue.get());
+            }
+        }
+        return newMessage;
     }
 }
