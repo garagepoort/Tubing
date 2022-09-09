@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Paths;
@@ -78,6 +79,17 @@ public class ConfigurationUtil {
             config.load(file);
         } catch (Exception e) {
             throw new ConfigurationException("Cannot load " + file, e);
+        }
+
+        return config;
+    }
+
+    public static FileConfiguration loadConfiguration(String fileContent) {
+        YamlConfiguration config = new YamlConfiguration();
+        try {
+            config.load(new StringReader(fileContent));
+        } catch (Exception e) {
+            throw new ConfigurationException("Cannot load config file from content", e);
         }
 
         return config;
