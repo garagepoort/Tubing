@@ -4,6 +4,7 @@ import be.garagepoort.mcioc.tubingbukkit.annotations.IocBukkitListener;
 import be.garagepoort.mcioc.tubingbukkit.messaging.Messages;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 
@@ -22,7 +23,7 @@ public class ChatActionListener implements Listener {
         this.messages = messages;
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onChat(AsyncPlayerChatEvent chatEvent) {
         Map<UUID, Consumer<String>> actions = chatActionService.getActions();
         Player player = chatEvent.getPlayer();
@@ -37,5 +38,6 @@ public class ChatActionListener implements Listener {
         } catch (Exception e) {
             messages.send(player, e.getMessage());
         }
+        chatEvent.setCancelled(true);
     }
 }
