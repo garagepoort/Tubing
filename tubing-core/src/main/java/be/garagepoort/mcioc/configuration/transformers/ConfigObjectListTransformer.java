@@ -8,6 +8,6 @@ import java.util.stream.Collectors;
 public class ConfigObjectListTransformer {
 
     public static <T> List<T> transform(Class<T> objectClass, List<LinkedHashMap<String, Object>> listOfMaps) {
-        return Objects.requireNonNull(listOfMaps).stream().map(map -> ConfigEmbeddedObjectTransformer.transform(objectClass, map)).collect(Collectors.toList());
+        return Objects.requireNonNull(listOfMaps).stream().map(map -> ConfigEmbeddedListObjectTransformer.transform(objectClass, map)).collect(Collectors.toList());
     }
 }

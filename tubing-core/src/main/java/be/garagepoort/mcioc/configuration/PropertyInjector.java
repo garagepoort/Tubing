@@ -5,18 +5,14 @@ import be.garagepoort.mcioc.ReflectionUtils;
 import be.garagepoort.mcioc.configuration.files.ConfigurationException;
 import be.garagepoort.mcioc.configuration.transformers.ConfigEmbeddedObjectTransformer;
 import be.garagepoort.mcioc.configuration.transformers.ConfigObjectListTransformer;
+import be.garagepoort.mcioc.configuration.yaml.configuration.MemorySection;
 import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 public class PropertyInjector {
@@ -25,6 +21,9 @@ public class PropertyInjector {
     }
 
     public static void injectEmbeddedConfigurationProperties(Object bean, Map<String, Object> configs) {
+        setProperties((v) -> Optional.ofNullable(configs.get(v)), bean);
+    }
+    public static void injectEmbeddedConfigurationProperties(Object bean, MemorySection configs) {
         setProperties((v) -> Optional.ofNullable(configs.get(v)), bean);
     }
 
@@ -102,8 +101,15 @@ public class PropertyInjector {
 
             if (configEmbeddedObject != null) {
                 Class objectClass = configEmbeddedObject.value();
-                LinkedHashMap<String, Object> listOfMaps = (LinkedHashMap<String, Object>) configValue.get();
-                return (Optional<T>) Optional.ofNullable(ConfigEmbeddedObjectTransformer.transform(objectClass, listOfMaps));
+                Object configSection = configValue.get();
+                if(configSection instanceof MemorySection) {
+                    MemorySection section = (MemorySection) configSection;
+                    return (Optional<T>) Optional.ofNullable(ConfigEmbeddedObjectTransformer.transform(objectClass, section));
+                }
+                if(configSection instanceof LinkedHashMap) {
+                    LinkedHashMap<String, Object> listOfMaps = (LinkedHashMap<String, Object>) configValue.get();
+                    return (Optional<T>) Optional.ofNullable(ConfigEmbeddedObjectTransformer.transform(objectClass, listOfMaps));
+                }
             }
             if (configObjectList != null) {
                 Class objectClass = configObjectList.value();
