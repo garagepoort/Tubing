@@ -6,12 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD})
-public @interface ConfigProperty {
+@Target({ElementType.TYPE})
+public @interface ConfigProperties {
 
     String value();
-
-    boolean required() default false;
-
-    String error() default "";
 }

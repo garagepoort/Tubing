@@ -99,11 +99,14 @@ public class IocContainer {
                 instantiateBean(scanResult, aClass, validBeans, providers, multiProviders, false);
             }
 
-            List<Method> afterMethods = configurationClasses.stream().flatMap(c -> ReflectionUtils.getMethodsAnnotatedWith(c, AfterIocLoad.class).stream()).collect(Collectors.toList());
-            for (Method afterMethod : afterMethods) {
-                List<Object> params = buildParams(scanResult, validBeans, providers, multiProviders, afterMethod.getParameterTypes(), afterMethod.getParameterAnnotations());
-                afterMethod.invoke(null, params.toArray());
+            for (Class<?> configurationClass : configurationClasses) {
+                List<Method> afterMethods = ReflectionUtils.getMethodsAnnotatedWith(configurationClass, AfterIocLoad.class);
+                for (Method afterMethod : afterMethods) {
+                    List<Object> params = buildParams(configurationClass, scanResult, validBeans, providers, multiProviders, afterMethod.getParameterTypes(), afterMethod.getParameterAnnotations());
+                    afterMethod.invoke(null, params.toArray());
+                }
             }
+
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new IocException("Could not validate instantiate beans", e);
         }
@@ -225,7 +228,7 @@ public class IocContainer {
 
 //        tubingPlugin.getLogger().info("[MC-IOC] Start creation of bean [" + aClass.getName() + "]");
         Constructor<?> declaredConstructor = aClass.getDeclaredConstructors()[0];
-        List<Object> constructorParams = buildParams(scanResult, validBeans, providers, multiProviders, declaredConstructor.getParameterTypes(), declaredConstructor.getParameterAnnotations());
+        List<Object> constructorParams = buildParams(aClass, scanResult, validBeans, providers, multiProviders, declaredConstructor.getParameterTypes(), declaredConstructor.getParameterAnnotations());
 
         try {
 //            tubingPlugin.getLogger().info("[MC-IOC] Creating new bean [" + aClass.getName() + "] with constructor arguments [" + constructorParams.stream().map(d -> d.getClass().getName()).collect(Collectors.joining(",")) + "]");
@@ -249,7 +252,7 @@ public class IocContainer {
     private Object getProvidedBean(ScanResult scanResult, Class<?> aClass, Set<Class<?>> validBeans, List<Method> providers, List<Method> multiProviders) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Optional<Method> beanProvider = providers.stream().filter(p -> p.getReturnType() == aClass).findFirst();
         if (beanProvider.isPresent()) {
-            List<Object> params = buildParams(scanResult, validBeans, providers, multiProviders, beanProvider.get().getParameterTypes(), beanProvider.get().getParameterAnnotations());
+            List<Object> params = buildParams(aClass, scanResult, validBeans, providers, multiProviders, beanProvider.get().getParameterTypes(), beanProvider.get().getParameterAnnotations());
             Object invoke = beanProvider.get().invoke(null, params.toArray());
             if (invoke != null) {
                 beans.putIfAbsent(beanProvider.get().getReturnType(), invoke);
@@ -266,7 +269,7 @@ public class IocContainer {
         }).findFirst();
 
         if (beanProvider.isPresent()) {
-            List<Object> params = buildParams(scanResult, validBeans, providers, multiProviders, beanProvider.get().getParameterTypes(), beanProvider.get().getParameterAnnotations());
+            List<Object> params = buildParams(aClass, scanResult, validBeans, providers, multiProviders, beanProvider.get().getParameterTypes(), beanProvider.get().getParameterAnnotations());
             Collection invoke = (Collection) beanProvider.get().invoke(null, params.toArray());
             multiProviders.remove(beanProvider.get());
             return invoke == null ? Collections.emptyList() : invoke;
@@ -274,7 +277,7 @@ public class IocContainer {
         return Collections.emptyList();
     }
 
-    private List<Object> buildParams(ScanResult scanResult, Set<Class<?>> validBeans, List<Method> providedBeans, List<Method> multiProviders, Class<?>[] parameterTypes, Annotation[][] parameterAnnotations) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    private List<Object> buildParams(Class<?> aClass, ScanResult scanResult, Set<Class<?>> validBeans, List<Method> providedBeans, List<Method> multiProviders, Class<?>[] parameterTypes, Annotation[][] parameterAnnotations) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         List<Object> constructorParams = new ArrayList<>();
 
         for (int i = 0; i < parameterTypes.length; i++) {
@@ -292,7 +295,7 @@ public class IocContainer {
             if (tubingPluginAnnotation.isPresent()) {
                 constructorParams.add(tubingPlugin);
             } else if (configAnnotation.isPresent()) {
-                Object property = PropertyInjector.getConstructorConfigurationProperty(classParam, annotations, getConfigurationFiles());
+                Object property = PropertyInjector.getConstructorConfigurationProperty(aClass, classParam, annotations, getConfigurationFiles());
                 constructorParams.add(property);
             } else if (multiAnnotation.isPresent()) {
                 IocMulti iocMulti = (IocMulti) multiAnnotation.get();
