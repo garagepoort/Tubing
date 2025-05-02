@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.lang.ClassCastException;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -120,13 +121,13 @@ public class PropertyInjector {
                                                ConfigObjectList configObjectList,
                                                ConfigEmbeddedObject configEmbeddedObject,
                                                Function<String, Optional> configRetrievalFunction) {
+        String prefix = "";
+        if (configProperties != null) {
+            prefix = configProperties.value() + ".";
+        }
+        String configProperty = prefix + configAnnotation.value();
+        
         try {
-            String prefix = "";
-            if (configProperties != null) {
-                prefix = configProperties.value() + ".";
-            }
-            String configProperty = prefix + configAnnotation.value();
-
             Optional configValue = configRetrievalFunction.apply(configProperty);
             if (!configValue.isPresent()) {
                 if (configAnnotation.required()) {
@@ -174,6 +175,8 @@ public class PropertyInjector {
             }
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new IocException("Cannot create configtransformer", e);
+        } catch (ClassCastException e) {
+            throw new ConfigurationException("Failed to convert configuration value for '" + configProperty + "', is it correct type?", e);
         }
     }
 
