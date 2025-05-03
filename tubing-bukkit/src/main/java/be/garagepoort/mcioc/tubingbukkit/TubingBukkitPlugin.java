@@ -34,7 +34,6 @@ public abstract class TubingBukkitPlugin extends JavaPlugin implements TubingPlu
         }
         
         enable();
-        
     }
 
     @Override
