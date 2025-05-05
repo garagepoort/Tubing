@@ -2,6 +2,7 @@ package be.garagepoort.mcioc.tubingbukkit;
 
 import be.garagepoort.mcioc.IocContainer;
 import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.configuration.files.ConfigurationException;
 import be.garagepoort.mcioc.tubingbukkit.annotations.BeforeTubingReload;
 import be.garagepoort.mcioc.tubingbukkit.load.TubingBukkitBeanLoader;
 import org.bukkit.event.HandlerList;
@@ -22,8 +23,16 @@ public abstract class TubingBukkitPlugin extends JavaPlugin implements TubingPlu
     public void onEnable() {
         tubingBukkitPlugin = this;
         beforeEnable();
-        iocContainer = initIocContainer();
-        TubingBukkitBeanLoader.load(this);
+        
+        try {
+            iocContainer = initIocContainer();
+            TubingBukkitBeanLoader.load(this);
+        } catch (ConfigurationException e) {
+            this.getLogger().severe(e.getLocalizedMessage());
+            this.getPluginLoader().disablePlugin(this);
+            return;
+        }
+        
         enable();
     }
 
@@ -43,9 +52,13 @@ public abstract class TubingBukkitPlugin extends JavaPlugin implements TubingPlu
         getServer().getMessenger().unregisterIncomingPluginChannel(this);
         getServer().getMessenger().unregisterOutgoingPluginChannel(this);
 
-
-        iocContainer = initIocContainer();
-        TubingBukkitBeanLoader.load(this);
+        try {
+            iocContainer = initIocContainer();
+            TubingBukkitBeanLoader.load(this);
+        } catch (ConfigurationException e) {
+            this.getLogger().severe(e.getLocalizedMessage());
+            this.getPluginLoader().disablePlugin(this);
+        }
     }
 
     @Override
