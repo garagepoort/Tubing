@@ -2,11 +2,11 @@ package be.garagepoort.mcioc.configuration;
 
 import be.garagepoort.mcioc.IocException;
 import be.garagepoort.mcioc.ReflectionUtils;
-import be.garagepoort.mcioc.configuration.files.ConfigurationException;
 import be.garagepoort.mcioc.configuration.transformers.ConfigEmbeddedObjectTransformer;
 import be.garagepoort.mcioc.configuration.transformers.ConfigObjectListTransformer;
 import be.garagepoort.mcioc.configuration.yaml.configuration.MemorySection;
 import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
+import be.garagepoort.mcioc.diagnostics.TubingDiagnosticException;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -57,12 +57,15 @@ public class PropertyInjector {
                 .filter(a -> a.annotationType().equals(ConfigEmbeddedObject.class))
                 .map(a -> (ConfigEmbeddedObject) a).findFirst();
 
+        ConfigProperty annotation = configAnnotation.get();
+        String configProperty = getConfigProperty(configProperties, annotation);
         Optional<Object> configValue = parseConfig(classParam,
-                configProperties,
-                configAnnotation.get(),
+                annotation,
                 configTransformerAnnotation.orElse(null),
                 configObjectListAnnotation.orElse(null),
-                configEmbeddedObject.orElse(null), v -> ReflectionUtils.getConfigValue(v, configs));
+                configEmbeddedObject.orElse(null),
+                new ConfigInjectionContext(aClass, "constructor parameter " + classParam.getName(), classParam, configProperty, configTransformerAnnotation.orElse(null)),
+                v -> ReflectionUtils.getConfigValue(v, configs));
         return configValue.orElse(null);
     }
 
@@ -75,7 +78,11 @@ public class PropertyInjector {
 
             List<Method> configMethods = ReflectionUtils.getMethodsAnnotatedWith(o.getClass(), ConfigProperty.class);
             for (Method configMethod : configMethods) {
-                Optional<Object> parsedConfigValue = parseConfig(configMethod.getParameterTypes()[0], configProperties, configMethod.getAnnotation(ConfigProperty.class), null, null, null, configRetrievalFunction);
+                ConfigProperty annotation = configMethod.getAnnotation(ConfigProperty.class);
+                Class<?> parameterType = configMethod.getParameterTypes()[0];
+                Optional<Object> parsedConfigValue = parseConfig(parameterType, annotation, null, null, null,
+                        new ConfigInjectionContext(o.getClass(), "method " + configMethod.getName(), parameterType, getConfigProperty(configProperties, annotation), null),
+                        configRetrievalFunction);
                 if (parsedConfigValue.isPresent()) {
                     configMethod.invoke(o, parsedConfigValue.get());
                 }
@@ -101,37 +108,41 @@ public class PropertyInjector {
                 }
 
                 ConfigProperty annotation = f.getAnnotation(ConfigProperty.class);
-                Optional<Object> parsedConfigValue = parseConfig(f.getType(), configProperties, annotation, configTransformer, configObjectListAnnotation, configEmbeddedObject, configRetrievalFunction);
+                Optional<Object> parsedConfigValue = parseConfig(f.getType(), annotation, configTransformer, configObjectListAnnotation, configEmbeddedObject,
+                        new ConfigInjectionContext(o.getClass(), "field " + f.getName(), f.getType(), getConfigProperty(configProperties, annotation), configTransformer),
+                        configRetrievalFunction);
                 if (parsedConfigValue.isPresent()) {
                     f.setAccessible(true);
                     f.set(o, parsedConfigValue.get());
                 }
             }
+        } catch (TubingDiagnosticException e) {
+            throw e;
         } catch (IllegalAccessException e) {
             throw new IocException("Cannot inject property. Make sure the field is public", e);
         } catch (InvocationTargetException e) {
+            Throwable cause = e.getTargetException();
+            if (cause instanceof TubingDiagnosticException) {
+                throw (TubingDiagnosticException) cause;
+            }
             throw new IocException("Cannot inject property. Make sure the config property setter is public", e);
         }
     }
 
     private static <T> Optional<T> parseConfig(Class type,
-                                               ConfigProperties configProperties,
                                                ConfigProperty configAnnotation,
                                                ConfigTransformer configTransformer,
                                                ConfigObjectList configObjectList,
                                                ConfigEmbeddedObject configEmbeddedObject,
+                                               ConfigInjectionContext context,
                                                Function<String, Optional> configRetrievalFunction) {
-        String prefix = "";
-        if (configProperties != null) {
-            prefix = configProperties.value() + ".";
-        }
-        String configProperty = prefix + configAnnotation.value();
-        
+        String configProperty = context.getProperty();
+
         try {
             Optional configValue = configRetrievalFunction.apply(configProperty);
             if (!configValue.isPresent()) {
                 if (configAnnotation.required()) {
-                    throw new ConfigurationException(configAnnotation.error().isEmpty() ? "Configuration not found for " + configProperty : configAnnotation.error());
+                    throw context.missingRequired(configAnnotation.error());
                 }
                 return Optional.empty();
             }
@@ -167,17 +178,69 @@ public class PropertyInjector {
                         throw new IocException("Invalid IConfigTransformer. Invalid constructor");
                     }
                     setProperties(configRetrievalFunction, iConfigTransformer);
-                    transformedConfig = iConfigTransformer.mapConfig(transformedConfig);
+                    try {
+                        transformedConfig = iConfigTransformer.mapConfig(transformedConfig);
+                    } catch (RuntimeException e) {
+                        throw context.transformerFailed(transformerClass, transformedConfig, e);
+                    }
                 }
                 return (Optional<T>) Optional.ofNullable(transformedConfig);
             } else {
+                Object value = configValue.get();
+                if (!isAssignableTo(type, value)) {
+                    throw context.conversionFailed(value, null);
+                }
                 return configValue;
             }
+        } catch (TubingDiagnosticException e) {
+            throw e;
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new IocException("Cannot create configtransformer", e);
         } catch (ClassCastException e) {
-            throw new ConfigurationException("Failed to convert configuration value for '" + configProperty + "', is it correct type?", e);
+            throw context.conversionFailed(configRetrievalFunction.apply(configProperty).orElse(null), e);
         }
+    }
+
+    private static boolean isAssignableTo(Class type, Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (!type.isPrimitive()) {
+            return type.isAssignableFrom(value.getClass());
+        }
+        if (type == boolean.class) {
+            return value instanceof Boolean;
+        }
+        if (type == byte.class) {
+            return value instanceof Byte;
+        }
+        if (type == short.class) {
+            return value instanceof Short;
+        }
+        if (type == int.class) {
+            return value instanceof Integer;
+        }
+        if (type == long.class) {
+            return value instanceof Long;
+        }
+        if (type == float.class) {
+            return value instanceof Float;
+        }
+        if (type == double.class) {
+            return value instanceof Double;
+        }
+        if (type == char.class) {
+            return value instanceof Character;
+        }
+        return false;
+    }
+
+    private static String getConfigProperty(ConfigProperties configProperties, ConfigProperty configAnnotation) {
+        String prefix = "";
+        if (configProperties != null) {
+            prefix = configProperties.value() + ".";
+        }
+        return prefix + configAnnotation.value();
     }
 
     private static List<Field> getAllFields(List<Field> fields, Class<?> type) {

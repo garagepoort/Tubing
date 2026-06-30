@@ -2,6 +2,7 @@ package be.garagepoort.mcioc.tubingbungee;
 
 import be.garagepoort.mcioc.IocContainer;
 import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.diagnostics.TubingErrorReporter;
 import be.garagepoort.mcioc.tubingbungee.annotations.BeforeTubingReload;
 import be.garagepoort.mcioc.tubingbungee.load.TubingBungeeBeanLoader;
 import net.md_5.bungee.api.ProxyServer;
@@ -22,9 +23,14 @@ public abstract class TubingBungeePlugin extends Plugin implements TubingPlugin 
     public void onEnable() {
         tubingBungeePlugin = this;
         beforeEnable();
-        iocContainer = initIocContainer();
-        TubingBungeeBeanLoader.load(this);
-        enable();
+        try {
+            iocContainer = initIocContainer();
+            TubingBungeeBeanLoader.load(this);
+            enable();
+        } catch (RuntimeException e) {
+            TubingErrorReporter.report(getLogger(), e);
+            throw e;
+        }
     }
 
     @Override
@@ -41,8 +47,13 @@ public abstract class TubingBungeePlugin extends Plugin implements TubingPlugin 
         ProxyServer.getInstance().getPluginManager().unregisterCommands(this);
         ProxyServer.getInstance().getPluginManager().unregisterListeners(this);
 
-        iocContainer = initIocContainer();
-        TubingBungeeBeanLoader.load(this);
+        try {
+            iocContainer = initIocContainer();
+            TubingBungeeBeanLoader.load(this);
+        } catch (RuntimeException e) {
+            TubingErrorReporter.report(getLogger(), e);
+            throw e;
+        }
     }
 
     @Override

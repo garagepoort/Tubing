@@ -2,6 +2,7 @@ package be.garagepoort.mcioc.tubingvelocity;
 
 import be.garagepoort.mcioc.IocContainer;
 import be.garagepoort.mcioc.TubingPlugin;
+import be.garagepoort.mcioc.diagnostics.TubingErrorReporter;
 import be.garagepoort.mcioc.tubingvelocity.annotations.BeforeTubingReload;
 import be.garagepoort.mcioc.tubingvelocity.load.TubingVelocityBeanLoader;
 import com.velocitypowered.api.command.CommandManager;
@@ -37,9 +38,14 @@ public abstract class TubingVelocityPlugin implements TubingPlugin {
     public void onProxyInitialization(ProxyInitializeEvent event) {
         tubingBungeePlugin = this;
         beforeEnable();
-        iocContainer = initIocContainer();
-        TubingVelocityBeanLoader.load(this);
-        enable();
+        try {
+            iocContainer = initIocContainer();
+            TubingVelocityBeanLoader.load(this);
+            enable();
+        } catch (RuntimeException e) {
+            TubingErrorReporter.report(getLogger(), e);
+            throw e;
+        }
     }
     protected abstract void enable();
 
@@ -59,8 +65,13 @@ public abstract class TubingVelocityPlugin implements TubingPlugin {
         }
         this.proxyServer.getEventManager().unregisterListeners(this);
 
-        iocContainer = initIocContainer();
-        TubingVelocityBeanLoader.load(this);
+        try {
+            iocContainer = initIocContainer();
+            TubingVelocityBeanLoader.load(this);
+        } catch (RuntimeException e) {
+            TubingErrorReporter.report(getLogger(), e);
+            throw e;
+        }
     }
 
     @Override

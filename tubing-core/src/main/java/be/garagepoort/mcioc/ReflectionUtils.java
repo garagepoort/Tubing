@@ -1,5 +1,6 @@
 package be.garagepoort.mcioc;
 
+import be.garagepoort.mcioc.configuration.ConfigKey;
 import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
 
 import java.lang.annotation.Annotation;
@@ -32,28 +33,16 @@ public class ReflectionUtils {
 
         identifier = replaceNestedValues(identifier, configs);
 
-        String configFileId = "config";
-        String path = identifier;
-
-        String[] fileSelectors = identifier.split(":", 2);
-        if (fileSelectors.length == 2) {
-            configFileId = fileSelectors[0];
-            path = fileSelectors[1];
-        }
-        return Optional.ofNullable((T) configs.get(configFileId).get(path));
+        ConfigKey configKey = ConfigKey.parse(identifier);
+        configKey.requireConfiguration(configs);
+        return (Optional<T>) configKey.getValue(configs);
     }
 
     public static Optional<String> getConfigStringValue(String identifier, Map<String, FileConfiguration> configs) {
         identifier = replaceNestedValues(identifier, configs);
-        String configFileId = "config";
-        String path = identifier;
-
-        String[] fileSelectors = identifier.split(":", 2);
-        if (fileSelectors.length == 2) {
-            configFileId = fileSelectors[0];
-            path = fileSelectors[1];
-        }
-        return Optional.ofNullable(configs.get(configFileId).getString(path));
+        ConfigKey configKey = ConfigKey.parse(identifier);
+        configKey.requireConfiguration(configs);
+        return configKey.getStringValue(configs);
     }
 
     private static String replaceNestedValues(String identifier, Map<String, FileConfiguration> configs) {

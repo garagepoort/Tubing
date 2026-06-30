@@ -5,6 +5,7 @@ import be.garagepoort.mcioc.configuration.ConfigurationLoader;
 import be.garagepoort.mcioc.configuration.PropertyInjector;
 import be.garagepoort.mcioc.configuration.TubingPluginInjector;
 import be.garagepoort.mcioc.configuration.yaml.configuration.file.FileConfiguration;
+import be.garagepoort.mcioc.diagnostics.TubingDiagnosticException;
 import be.garagepoort.mcioc.load.InjectTubingPlugin;
 import be.garagepoort.mcioc.load.TubingBeanAnnotationRegistrator;
 import io.github.classgraph.ClassGraph;
@@ -107,6 +108,8 @@ public class IocContainer {
                 }
             }
 
+        } catch (TubingDiagnosticException e) {
+            throw e;
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new IocException("Could not validate instantiate beans", e);
         }
@@ -237,7 +240,13 @@ public class IocContainer {
             TubingPluginInjector.inject(bean, tubingPlugin);
             beans.putIfAbsent(aClass, bean);
             return bean;
+        } catch (TubingDiagnosticException e) {
+            throw e;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            Throwable cause = e instanceof InvocationTargetException ? ((InvocationTargetException) e).getTargetException() : e;
+            if (cause instanceof TubingDiagnosticException) {
+                throw (TubingDiagnosticException) cause;
+            }
             throw new IocException("Cannot instantiate bean with type " + aClass.getName() + ".", e);
         }
     }

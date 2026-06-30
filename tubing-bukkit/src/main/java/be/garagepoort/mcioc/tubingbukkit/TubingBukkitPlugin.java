@@ -2,7 +2,7 @@ package be.garagepoort.mcioc.tubingbukkit;
 
 import be.garagepoort.mcioc.IocContainer;
 import be.garagepoort.mcioc.TubingPlugin;
-import be.garagepoort.mcioc.configuration.files.ConfigurationException;
+import be.garagepoort.mcioc.diagnostics.TubingErrorReporter;
 import be.garagepoort.mcioc.tubingbukkit.annotations.BeforeTubingReload;
 import be.garagepoort.mcioc.tubingbukkit.load.TubingBukkitBeanLoader;
 import org.bukkit.event.HandlerList;
@@ -27,8 +27,8 @@ public abstract class TubingBukkitPlugin extends JavaPlugin implements TubingPlu
         try {
             iocContainer = initIocContainer();
             TubingBukkitBeanLoader.load(this);
-        } catch (ConfigurationException e) {
-            this.getLogger().severe(e.getLocalizedMessage());
+        } catch (RuntimeException e) {
+            TubingErrorReporter.report(getLogger(), e);
             this.getPluginLoader().disablePlugin(this);
             return;
         }
@@ -55,8 +55,8 @@ public abstract class TubingBukkitPlugin extends JavaPlugin implements TubingPlu
         try {
             iocContainer = initIocContainer();
             TubingBukkitBeanLoader.load(this);
-        } catch (ConfigurationException e) {
-            this.getLogger().severe(e.getLocalizedMessage());
+        } catch (RuntimeException e) {
+            TubingErrorReporter.report(getLogger(), e);
             this.getPluginLoader().disablePlugin(this);
         }
     }
