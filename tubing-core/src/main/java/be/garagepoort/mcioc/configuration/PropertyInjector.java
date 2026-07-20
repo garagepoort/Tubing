@@ -187,10 +187,11 @@ public class PropertyInjector {
                 return (Optional<T>) Optional.ofNullable(transformedConfig);
             } else {
                 Object value = configValue.get();
-                if (!isAssignableTo(type, value)) {
+                Optional<T> convertedValue = convertValue(type, value);
+                if (!convertedValue.isPresent()) {
                     throw context.conversionFailed(value, null);
                 }
-                return configValue;
+                return convertedValue;
             }
         } catch (TubingDiagnosticException e) {
             throw e;
@@ -201,38 +202,44 @@ public class PropertyInjector {
         }
     }
 
-    private static boolean isAssignableTo(Class type, Object value) {
+    private static <T> Optional<T> convertValue(Class type, Object value) {
         if (value == null) {
-            return true;
+            return Optional.ofNullable(null);
         }
-        if (!type.isPrimitive()) {
-            return type.isAssignableFrom(value.getClass());
+        if (type.isAssignableFrom(value.getClass())) {
+            return Optional.of((T) value);
         }
-        if (type == boolean.class) {
-            return value instanceof Boolean;
+        if (type == boolean.class || type == Boolean.class) {
+            return value instanceof Boolean ? Optional.of((T) value) : Optional.empty();
         }
-        if (type == byte.class) {
-            return value instanceof Byte;
+        if (type == byte.class || type == Byte.class) {
+            return value instanceof Number ? Optional.of((T) Byte.valueOf(((Number) value).byteValue())) : Optional.empty();
         }
-        if (type == short.class) {
-            return value instanceof Short;
+        if (type == short.class || type == Short.class) {
+            return value instanceof Number ? Optional.of((T) Short.valueOf(((Number) value).shortValue())) : Optional.empty();
         }
-        if (type == int.class) {
-            return value instanceof Integer;
+        if (type == int.class || type == Integer.class) {
+            return value instanceof Number ? Optional.of((T) Integer.valueOf(((Number) value).intValue())) : Optional.empty();
         }
-        if (type == long.class) {
-            return value instanceof Long;
+        if (type == long.class || type == Long.class) {
+            return value instanceof Number ? Optional.of((T) Long.valueOf(((Number) value).longValue())) : Optional.empty();
         }
-        if (type == float.class) {
-            return value instanceof Float;
+        if (type == float.class || type == Float.class) {
+            return value instanceof Number ? Optional.of((T) Float.valueOf(((Number) value).floatValue())) : Optional.empty();
         }
-        if (type == double.class) {
-            return value instanceof Double;
+        if (type == double.class || type == Double.class) {
+            return value instanceof Number ? Optional.of((T) Double.valueOf(((Number) value).doubleValue())) : Optional.empty();
         }
-        if (type == char.class) {
-            return value instanceof Character;
+        if (type == char.class || type == Character.class) {
+            if (value instanceof Character) {
+                return Optional.of((T) value);
+            }
+            if (value instanceof String && ((String) value).length() == 1) {
+                return Optional.of((T) Character.valueOf(((String) value).charAt(0)));
+            }
+            return Optional.empty();
         }
-        return false;
+        return Optional.empty();
     }
 
     private static String getConfigProperty(ConfigProperties configProperties, ConfigProperty configAnnotation) {
